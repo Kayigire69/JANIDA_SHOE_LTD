@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
-import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X, BarChart3, ClipboardCheck } from "lucide-react";
 import { inventoryApi, StockMovement as Movement, RawMaterial, FinishedGood } from "../../services/inventoryApi";
+import { exportToCSV, exportToPDF } from "../../utils/exportUtils";
 
 export function StockMovement() {
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -106,6 +107,26 @@ export function StockMovement() {
     }
   };
 
+  const handleExportCSV = () => {
+    const rows = [
+      ["Stock Movement Report"],
+      [""],
+      ["Log ID", "Item", "Type", "Direction", "Quantity", "Reference", "Location", "Date", "Operator"],
+      ...movements.map(m => [
+        m.id.substring(0, 8),
+        m.material,
+        m.unit === "pairs" ? "Finished Good" : "Raw Material",
+        m.type.toUpperCase(),
+        `${m.quantity} ${m.unit}`,
+        m.reference || "-",
+        m.location || "-",
+        m.date,
+        m.operator
+      ])
+    ];
+    exportToCSV("stock_movement_report", rows);
+  };
+
   return (
     <Layout>
       <div className="p-8 space-y-6">
@@ -114,30 +135,48 @@ export function StockMovement() {
             <h1 className="text-2xl font-semibold text-slate-900">Stock Movement Logs</h1>
             <p className="text-slate-600 text-sm mt-1">Real-time recording and historical tracking of inventory</p>
           </div>
-          {canManage && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setAdjustType("in");
-                  setShowAdjustModal(true);
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2 print:hidden mr-4">
+              <button 
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
               >
-                <ArrowUpRight className="w-4 h-4" />
-                Record Stock-In
+                <ClipboardCheck className="w-4 h-4" />
+                Export PDF
               </button>
-              <button
-                onClick={() => {
-                  setAdjustType("out");
-                  setShowAdjustModal(true);
-                }}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all shadow-lg"
+              <button 
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
               >
-                <ArrowDownLeft className="w-4 h-4" />
-                Record Stock-Out
+                <BarChart3 className="w-4 h-4" />
+                Export Excel
               </button>
             </div>
-          )}
+            {canManage && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setAdjustType("in");
+                    setShowAdjustModal(true);
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  Record Stock-In
+                </button>
+                <button
+                  onClick={() => {
+                    setAdjustType("out");
+                    setShowAdjustModal(true);
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all shadow-lg"
+                >
+                  <ArrowDownLeft className="w-4 h-4" />
+                  Record Stock-Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (

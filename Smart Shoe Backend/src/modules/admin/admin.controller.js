@@ -36,6 +36,15 @@ export const toggleUserLock = async (req, res, next) => {
   }
 }
 
+export const deleteUser = async (req, res, next) => {
+  try {
+    const result = await adminService.deleteUser(req.params.id)
+    res.json(result)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const listProducts = async (req, res, next) => {
   try {
     const data = await adminService.listProducts(req.query)

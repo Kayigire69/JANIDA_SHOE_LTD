@@ -7,11 +7,13 @@ import { PasswordRecovery } from "./components/PasswordRecovery";
 import { PasswordReset } from "./components/PasswordReset";
 import { MFASetup } from "./components/MFASetup";
 import { ProfileManagement } from "./components/ProfileManagement";
+import { PendingApproval } from "./components/PendingApproval";
 import { ProductionManagerDashboard } from "./components/dashboards/ProductionManagerDashboard";
 import { InventoryManagerDashboard } from "./components/dashboards/InventoryManagerDashboard";
 import { QualityOfficerDashboard } from "./components/dashboards/QualityOfficerDashboard";
 import { SalesAdminDashboard } from "./components/dashboards/SalesAdminDashboard";
 import { AdministratorDashboard } from "./components/dashboards/AdministratorDashboard";
+import { SupervisorDashboard } from "./components/dashboards/SupervisorDashboard";
 import { dashboardPaths } from "./services/authApi";
 import { ProductionPlanning } from "./components/production/ProductionPlanning";
 import { ProductionSchedule } from "./components/production/ProductionSchedule";
@@ -36,6 +38,9 @@ import { OrderTracker } from "./components/orders/OrderTracker";
 import { BackorderLog } from "./components/orders/BackorderLog";
 import { InvoiceLog } from "./components/orders/InvoiceLog";
 import { WorkforceDirectory } from "./components/workforce/Directory";
+import { ShiftScheduling } from "./components/workforce/ShiftScheduling";
+import { TaskManagement } from "./components/workforce/TaskManagement";
+import { PerformanceReviews } from "./components/workforce/PerformanceReviews";
 import { EquipmentCatalog } from "./components/equipment/EquipmentCatalog";
 import { SecurityAudit } from "./components/security/SecurityAudit";
 import { AdminPanel } from "./components/admin/AdminPanel";
@@ -87,6 +92,10 @@ export const router = createBrowserRouter([
     Component: RoleRedirect,
   },
   {
+    path: "/pending-approval",
+    Component: PendingApproval,
+  },
+  {
     path: "/dashboard/production",
     Component: ProductionManagerDashboard,
   },
@@ -105,6 +114,10 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard/admin",
     Component: AdministratorDashboard,
+  },
+  {
+    path: "/dashboard/supervisor",
+    Component: SupervisorDashboard,
   },
   {
     path: "/production-planning",
@@ -197,6 +210,18 @@ export const router = createBrowserRouter([
   {
     path: "/workforce/directory",
     Component: WorkforceDirectory,
+  },
+  {
+    path: "/workforce/scheduling",
+    Component: ShiftScheduling,
+  },
+  {
+    path: "/workforce/tasks",
+    Component: TaskManagement,
+  },
+  {
+    path: "/workforce/performance",
+    Component: PerformanceReviews,
   },
   {
     path: "/equipment/catalog",

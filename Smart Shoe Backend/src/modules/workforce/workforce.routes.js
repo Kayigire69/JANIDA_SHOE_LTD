@@ -24,6 +24,7 @@ router.get('/attendance', controller.getAttendance)
 
 // Performance
 router.post('/performance', controller.createPerformanceReview)
+router.get('/performance', controller.listAllPerformanceReviews)
 router.get('/performance/:id', controller.getPerformanceReviews)
 
 // Leave

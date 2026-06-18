@@ -224,6 +224,16 @@ export const getPerformanceReviews = async (employeeId) => {
   return { reviews: result.rows }
 }
 
+export const listAllPerformanceReviews = async () => {
+  const result = await query(
+    `SELECT pr.*, e.full_name as employee_name, e.employee_code 
+     FROM workforce_performance_reviews pr 
+     JOIN workforce_employees e ON pr.employee_id = e.id 
+     ORDER BY pr.created_at DESC LIMIT 500`
+  )
+  return { reviews: result.rows }
+}
+
 // ---- Leave ----
 export const requestLeave = async (data) => {
   const { employeeId, leaveType, startDate, endDate, reason } = data

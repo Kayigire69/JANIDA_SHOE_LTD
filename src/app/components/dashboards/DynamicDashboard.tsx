@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { Layout } from "../Layout";
 import { SystemAnnouncement } from "../common/SystemAnnouncement";
 import { dashboardApi } from "../../services/dashboardApi";
+import { exportToCSV, exportToPDF } from "../../utils/exportUtils";
 
 const roleTitles: Record<string, string> = {
   production_manager: "Production Manager",
@@ -63,6 +64,29 @@ export function DynamicDashboard({ role }: { role: string }) {
   const primaryRecords = records.active_batches || records.stock_items || records.inspection_results || records.pending_orders || [];
   const activities = records.recent_activity || [];
 
+  const handleExportCSV = () => {
+    // Generate rows from metrics and primary records
+    const rows = [
+      ["Dashboard Report"],
+      [""],
+      ["Metrics"],
+      ["Title", "Value", "Trend"],
+      ...metrics.map((m: any) => [m.title, m.value, m.trend || m.subtitle]),
+      [""],
+      ["Role Data"],
+    ];
+
+    if (primaryRecords.length > 0) {
+      const headers = Object.keys(primaryRecords[0]);
+      rows.push(headers);
+      primaryRecords.forEach((record: any) => {
+        rows.push(headers.map(h => String(record[h])));
+      });
+    }
+    
+    exportToCSV(`${role}_dashboard_report`, rows);
+  };
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6">
@@ -70,6 +94,23 @@ export function DynamicDashboard({ role }: { role: string }) {
         {announcements.map((item: any) => (
           <SystemAnnouncement key={item.id} message={item.message} type={item.type} />
         ))}
+
+        <div className="flex items-center justify-end gap-3 mb-2 print:hidden">
+          <button 
+            onClick={exportToPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            Export PDF
+          </button>
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Export Excel (CSV)
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {metrics.map((metric: any) => (

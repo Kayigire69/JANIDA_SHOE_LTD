@@ -1,18 +1,22 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const roleLabels: Record<string, string> = {
+  pending: "Pending Approval",
   production_manager: "Production Manager",
   inventory_manager: "Inventory Manager",
   quality_officer: "Quality Officer",
   sales_staff: "Sales Staff",
+  supervisor: "Supervisor",
   administrator: "Administrator",
 };
 
 export const dashboardPaths: Record<string, string> = {
+  pending: "/pending-approval",
   production_manager: "/dashboard/production",
   inventory_manager: "/dashboard/inventory",
   quality_officer: "/dashboard/quality",
   sales_staff: "/dashboard/sales",
+  supervisor: "/dashboard/supervisor",
   administrator: "/dashboard/admin",
 };
 

@@ -1,14 +1,12 @@
 import { z } from 'zod'
 
-export const roles = ['production_manager', 'inventory_manager', 'quality_officer', 'sales_staff', 'administrator']
+export const roles = ['pending', 'production_manager', 'inventory_manager', 'quality_officer', 'sales_staff', 'administrator']
 
 export const registerSchema = z.object({
   fullName: z.string().min(2).max(120),
   email: z.string().email().max(160),
   phone: z.string().min(7).max(40),
-  employeeId: z.string().min(2).max(80),
-  role: z.enum(roles),
-  department: z.string().min(2).max(80),
+  department: z.string().min(2).max(80).optional().nullable(),
   password: z.string().min(8).regex(/[a-z]/).regex(/[A-Z]/).regex(/[0-9]/)
 })
 

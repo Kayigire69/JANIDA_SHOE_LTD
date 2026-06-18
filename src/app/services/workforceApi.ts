@@ -35,6 +35,7 @@ export const workforceApi = {
   getAttendance: (params: Record<string, string>) => request<{ records: any[] }>(`/workforce/attendance?${new URLSearchParams(params).toString()}`),
 
   createReview: (body: unknown) => request<any>("/workforce/performance", { method: "POST", body: JSON.stringify(body) }),
+  listAllReviews: () => request<{ reviews: any[] }>("/workforce/performance"),
   getReviews: (id: string) => request<{ reviews: any[] }>(`/workforce/performance/${id}`),
 
   requestLeave: (body: unknown) => request<any>("/workforce/leave", { method: "POST", body: JSON.stringify(body) }),

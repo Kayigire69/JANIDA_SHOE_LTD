@@ -1,5 +1,6 @@
 import { query } from '../../config/db.js'
 import { AppError } from '../../utils/AppError.js'
+import { sendRoleAssignmentEmail } from '../auth/mail.service.js'
 
 // System Overview Metrics
 export const getSystemOverview = async () => {
@@ -75,6 +76,13 @@ export const listUsers = async (params = {}) => {
 }
 
 export const updateUserRole = async (userId, { role, department }) => {
+  // First fetch the current user to check if they are pending
+  const userRes = await query(`SELECT * FROM users WHERE id = $1`, [userId])
+  if (userRes.rowCount === 0) throw new AppError('User not found', 404)
+
+  const currentUser = userRes.rows[0]
+  const wasPending = currentUser.role === 'pending'
+
   const fields = []
   const values = []
   let i = 1
@@ -90,13 +98,48 @@ export const updateUserRole = async (userId, { role, department }) => {
     i++
   }
 
+  // Auto-generate employee_id if transitioning from pending to an actual role
+  let generatedEmployeeId = null
+  if (wasPending && role && role !== 'pending' && !currentUser.employee_id) {
+    const seqRes = await query(`SELECT nextval('employee_id_seq') AS seq`)
+    generatedEmployeeId = `EMP-${String(seqRes.rows[0].seq).padStart(4, '0')}`
+    fields.push(`employee_id = $${i}`)
+    values.push(generatedEmployeeId)
+    i++
+  }
+
   if (fields.length === 0) throw new AppError('No fields to update', 400)
   fields.push('updated_at = NOW()')
   values.push(userId)
 
   const res = await query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`, values)
   if (res.rowCount === 0) throw new AppError('User not found', 404)
-  return res.rows[0]
+
+  const updatedUser = res.rows[0]
+
+  // Send email notification with Employee ID when role is assigned
+  if (wasPending && role && role !== 'pending') {
+    const roleLabels = {
+      production_manager: 'Production Manager',
+      inventory_manager: 'Inventory Manager',
+      quality_officer: 'Quality Officer',
+      sales_staff: 'Sales Staff',
+      administrator: 'Administrator'
+    }
+    try {
+      await sendRoleAssignmentEmail({
+        to: updatedUser.email,
+        fullName: updatedUser.full_name,
+        role: roleLabels[role] || role,
+        employeeId: updatedUser.employee_id,
+        department: updatedUser.department
+      })
+    } catch (emailErr) {
+      console.error('Failed to send role assignment email:', emailErr.message)
+    }
+  }
+
+  return updatedUser
 }
 
 export const toggleUserLock = async (userId, shouldLock) => {
@@ -106,6 +149,21 @@ export const toggleUserLock = async (userId, shouldLock) => {
   )
   if (res.rowCount === 0) throw new AppError('User not found', 404)
   return res.rows[0]
+}
+
+export const deleteUser = async (userId) => {
+  // Prevent deleting yourself or the last admin
+  const adminCount = await query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'administrator'`)
+  const userRes = await query(`SELECT role FROM users WHERE id = $1`, [userId])
+
+  if (userRes.rowCount === 0) throw new AppError('User not found', 404)
+
+  if (userRes.rows[0].role === 'administrator' && adminCount.rows[0].count <= 1) {
+    throw new AppError('Cannot delete the last administrator', 400)
+  }
+
+  await query(`DELETE FROM users WHERE id = $1`, [userId])
+  return { message: 'User deleted successfully' }
 }
 
 // Product Catalog (shoe_models)

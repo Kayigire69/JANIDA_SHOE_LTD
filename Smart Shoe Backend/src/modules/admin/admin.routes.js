@@ -13,6 +13,7 @@ router.get('/overview', controller.getSystemOverview)
 router.get('/users', controller.listUsers)
 router.patch('/users/:id/role', controller.updateUserRole)
 router.patch('/users/:id/lock', controller.toggleUserLock)
+router.delete('/users/:id', controller.deleteUser)
 
 // Product catalog
 router.get('/products', controller.listProducts)

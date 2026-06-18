@@ -100,6 +100,16 @@ export function Layout({ children }: LayoutProps) {
       { path: "/security/audit", icon: Shield, label: "Security" },
       { path: "/notifications", icon: Bell, label: "Notifications" },
     ],
+    "Supervisor": [
+      { path: "/dashboard/supervisor", icon: LayoutDashboard, label: "Dashboard" },
+      { path: "/workforce/tasks", icon: CheckSquare, label: "Tasks" },
+      { path: "/workforce/scheduling", icon: Calendar, label: "Schedules" },
+      { path: "/workforce/performance", icon: Award, label: "Performance" },
+      { path: "/workforce/directory", icon: Users, label: "Directory" },
+      { path: "/equipment/catalog", icon: Cog, label: "Equipment" },
+      { path: "/security/audit", icon: Shield, label: "Security" },
+      { path: "/notifications", icon: Bell, label: "Notifications" },
+    ],
     "Administrator": [
       { path: "/dashboard/admin", icon: LayoutDashboard, label: "Dashboard" },
       { path: "/production-planning", icon: Calendar, label: "Production" },
@@ -185,7 +195,8 @@ export function Layout({ children }: LayoutProps) {
                 {currentUserRole === "Production Manager" ? "Production Department" :
                  currentUserRole === "Inventory Manager" ? "Inventory & Logistics" :
                  currentUserRole === "Quality Officer" ? "Quality Assurance" :
-                 currentUserRole === "Sales Manager" ? "Sales & Marketing" :
+                 currentUserRole === "Sales Staff" ? "Sales & Marketing" :
+                 currentUserRole === "Supervisor" ? "Production Floor" :
                  "System Administration"}
               </p>
             </div>

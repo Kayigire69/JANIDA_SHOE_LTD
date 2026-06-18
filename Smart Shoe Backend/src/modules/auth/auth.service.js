@@ -35,18 +35,18 @@ const trackLogin = async ({ email, success, reason, req }) => {
 }
 
 export const register = async (data, req) => {
-  const existing = await query(`SELECT id FROM users WHERE email = $1 OR employee_id = $2`, [data.email, data.employeeId])
+  const existing = await query(`SELECT id FROM users WHERE email = $1`, [data.email.toLowerCase()])
 
   if (existing.rowCount > 0) {
-    throw new AppError('A user with this email or employee ID already exists', 409)
+    throw new AppError('A user with this email already exists', 409)
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12)
   const created = await query(
-    `INSERT INTO users (full_name, email, phone, employee_id, role, department, password_hash)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO users (full_name, email, phone, role, department, password_hash)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [data.fullName, data.email.toLowerCase(), data.phone, data.employeeId, data.role, data.department, passwordHash]
+    [data.fullName, data.email.toLowerCase(), data.phone, 'pending', data.department ?? null, passwordHash]
   )
 
   const user = created.rows[0]

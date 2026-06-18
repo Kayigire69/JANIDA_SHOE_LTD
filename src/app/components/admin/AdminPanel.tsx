@@ -172,6 +172,12 @@ export function AdminPanel() {
     catch (err: any) { setError(err?.message || "Lock toggle failed"); }
   };
 
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    try { await adminApi.deleteUser(id); fetchUsers(); }
+    catch (err: any) { setError(err?.message || "Delete user failed"); }
+  };
+
   const handleCreateProduct = async () => {
     if (!newProductName.trim()) return;
     try { await adminApi.createProduct(newProductName.trim()); setNewProductName(""); setShowAddProduct(false); fetchProducts(); }
@@ -257,7 +263,15 @@ export function AdminPanel() {
     catch (err: any) { setError(err?.message || "Delete failed"); }
   };
 
-  const roleOptions = ["production_manager", "inventory_manager", "quality_officer", "sales_staff", "administrator"];
+  const roleOptions = ["pending", "production_manager", "inventory_manager", "quality_officer", "sales_staff", "supervisor", "administrator"];
+  const departmentOptions = [
+    "Production",
+    "Inventory & Logistics",
+    "Quality Assurance",
+    "Sales & Marketing",
+    "IT & Administration",
+  ];
+
 
   return (
     <Layout>
@@ -359,6 +373,9 @@ export function AdminPanel() {
                               <button onClick={() => handleToggleLock(u.id, !!(u.locked_until && new Date(u.locked_until) > new Date()))} className="p-1.5 bg-slate-100 rounded hover:bg-slate-200">
                                 {u.locked_until && new Date(u.locked_until) > new Date() ? <Unlock className="w-4 h-4 text-emerald-600" /> : <Lock className="w-4 h-4 text-red-600" />}
                               </button>
+                              <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 bg-red-50 rounded hover:bg-red-100">
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -383,20 +400,66 @@ export function AdminPanel() {
         {editingUser && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-              <div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-slate-900">Edit User</h2><button onClick={() => setEditingUser(null)} className="p-1 hover:bg-slate-100 rounded"><X className="w-5 h-5" /></button></div>
-              <div className="space-y-3">
-                <div><label className="text-sm font-medium text-slate-700">Role</label>
-                  <select value={editingUser.role} onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg mt-1">
-                    {roleOptions.map((r) => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Assign Role & Department</h2>
+                  <p className="text-sm text-slate-500 mt-0.5">{editingUser.fullName || editingUser.email}</p>
+                </div>
+                <button onClick={() => setEditingUser(null)} className="p-1 hover:bg-slate-100 rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {editingUser.role === "pending" && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+                  <span className="mt-0.5">⚠️</span>
+                  <span>This user is <strong>pending</strong>. Assigning a role will activate their account and send them their Employee ID by email.</span>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Role *</label>
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {roleOptions.map((r) => (
+                      <option key={r} value={r}>{r.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}</option>
+                    ))}
                   </select>
                 </div>
-                <div><label className="text-sm font-medium text-slate-700">Department</label>
-                  <input value={editingUser.department} onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg mt-1" />
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Department *</label>
+                  <select
+                    value={editingUser.department || ""}
+                    onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">— Select Department —</option>
+                    {departmentOptions.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  {!editingUser.department && (
+                    <p className="text-xs text-amber-600 mt-1">⚠ Please assign a department before saving.</p>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => handleUserRoleUpdate(editingUser.id, editingUser.role, editingUser.department)} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">Save</button>
-                <button onClick={() => setEditingUser(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200">Cancel</button>
+
+              <div className="flex gap-3 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => handleUserRoleUpdate(editingUser.id, editingUser.role, editingUser.department)}
+                  disabled={!editingUser.department}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save & Assign
+                </button>
+                <button onClick={() => setEditingUser(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200">
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

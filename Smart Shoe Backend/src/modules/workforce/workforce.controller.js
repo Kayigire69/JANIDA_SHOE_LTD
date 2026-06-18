@@ -39,6 +39,7 @@ export const getAttendance = wrap(async (req) => workforceService.getAttendance(
 
 // Performance
 export const createPerformanceReview = wrap(async (req) => workforceService.createPerformanceReview(req.body, req.user.id))
+export const listAllPerformanceReviews = wrap(async () => workforceService.listAllPerformanceReviews())
 export const getPerformanceReviews = wrap(async (req) => workforceService.getPerformanceReviews(req.params.id))
 
 // Leave

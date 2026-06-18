@@ -26,6 +26,8 @@ export const adminApi = {
     request<any>(`/admin/users/${id}/role`, { method: "PATCH", body: JSON.stringify(body) }),
   toggleUserLock: (id: string, lock: boolean) =>
     request<any>(`/admin/users/${id}/lock`, { method: "PATCH", body: JSON.stringify({ lock }) }),
+  deleteUser: (id: string) =>
+    request<{ message: string }>(`/admin/users/${id}`, { method: "DELETE" }),
 
   // Products
   listProducts: (params?: Record<string, string>) =>

@@ -148,3 +148,47 @@ export const sendPasswordResetEmail = async ({ to, token }) => {
     html,
   })
 }
+
+export const sendRoleAssignmentEmail = async ({ to, fullName, role, employeeId, department }) => {
+  const loginUrl = `${env.CLIENT_URL}/login`
+
+  const text = `Hello ${fullName}, your account has been approved! Role: ${role}, Employee ID: ${employeeId}, Department: ${department}. You can now log in at ${loginUrl}.`
+
+  const html = buildEmailWrapper({
+    title: 'Account Approved — Janida Shoe Ltd',
+    headline: '🎉 Your Account Has Been Approved!',
+    bodyHtml: `Hello <strong>${fullName}</strong>,<br/><br/>
+    Great news! An administrator has reviewed your registration and approved your account. Here are your details:
+    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin:24px 0;width:100%;border-collapse:collapse;">
+      <tr>
+        <td style="padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px 8px 0 0;font-size:13px;color:${brandColors.gray};">Employee ID</td>
+        <td style="padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-left:none;border-radius:0 8px 0 0;font-size:15px;font-weight:700;color:${brandColors.slate};letter-spacing:1px;">${employeeId}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;border:1px solid #E2E8F0;border-top:none;font-size:13px;color:${brandColors.gray};">Role</td>
+        <td style="padding:12px 16px;border:1px solid #E2E8F0;border-left:none;border-top:none;font-size:15px;font-weight:600;color:${brandColors.primary};">${role}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 0 8px;font-size:13px;color:${brandColors.gray};">Department</td>
+        <td style="padding:12px 16px;border:1px solid #E2E8F0;border-left:none;border-top:none;border-radius:0 0 8px 0;font-size:15px;font-weight:600;color:${brandColors.slate};">${department}</td>
+      </tr>
+    </table>
+    Please save your <strong>Employee ID</strong> for your records. You can now log in to access your dashboard.`,
+    ctaUrl: loginUrl,
+    ctaLabel: 'Log In to Your Dashboard',
+    footerText: `This is an automated notification from Janida Shoe Ltd. If you did not register, please contact the IT department.`,
+  })
+
+  if (!transporter) {
+    console.log(`Role assignment email for ${to}: Role=${role}, EmpID=${employeeId}, Dept=${department}`)
+    return
+  }
+
+  await transporter.sendMail({
+    from: `"Janida Shoe Ltd" <${env.EMAIL_FROM}>`,
+    to,
+    subject: `Account Approved — Your Employee ID is ${employeeId}`,
+    text,
+    html,
+  })
+}

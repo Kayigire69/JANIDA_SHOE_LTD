@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   full_name VARCHAR(120) NOT NULL,
   email VARCHAR(160) UNIQUE NOT NULL,
   phone VARCHAR(40) NOT NULL,
-  employee_id VARCHAR(80) UNIQUE NOT NULL,
-  role VARCHAR(40) NOT NULL CHECK (role IN ('production_manager','inventory_manager','quality_officer','sales_staff','administrator')),
+  employee_id VARCHAR(80) UNIQUE,
+  role VARCHAR(40) NOT NULL CHECK (role IN ('pending','production_manager','inventory_manager','quality_officer','sales_staff','administrator')),
   department VARCHAR(80) NOT NULL,
   password_hash TEXT NOT NULL,
   email_verified BOOLEAN NOT NULL DEFAULT FALSE,
@@ -695,10 +695,32 @@ CREATE INDEX IF NOT EXISTS idx_equipment_status ON equipment(status);
 CREATE INDEX IF NOT EXISTS idx_equipment_maintenance_equipment ON equipment_maintenance(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_downtime_equipment ON equipment_downtime(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_calibration_equipment ON equipment_calibration(equipment_id);
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('pending','production_manager','inventory_manager','quality_officer','sales_staff','administrator','supervisor'));
+
+-- Make employee_id nullable for pending users
+ALTER TABLE users ALTER COLUMN employee_id DROP NOT NULL;
+
+-- Sequence for auto-generating employee IDs
+CREATE SEQUENCE IF NOT EXISTS employee_id_seq START WITH 1000;
 `
 
 await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto')
 await pool.query(sql)
+
+// Seed default admin user (always runs, idempotent)
+const bcrypt = (await import('bcryptjs')).default
+const adminExists = await pool.query(`SELECT id FROM users WHERE email = 'admin@janidashoe.com'`)
+if (adminExists.rowCount === 0) {
+  const adminPasswordHash = await bcrypt.hash('Admin@2025', 12)
+  await pool.query(
+    `INSERT INTO users (full_name, email, phone, employee_id, role, department, password_hash, email_verified)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
+    ['System Administrator', 'admin@janidashoe.com', '+250780000000', 'EMP-0001', 'administrator', 'IT & Administration', adminPasswordHash]
+  )
+  console.log('Default admin user seeded: admin@janidashoe.com / Admin@2025')
+}
 
 // Database Seeding Logic
 const enableSeedData = process.env.ENABLE_SEED_DATA === 'true'

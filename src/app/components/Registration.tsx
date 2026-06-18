@@ -8,33 +8,18 @@ export function Registration() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    role: "",
     fullName: "",
     email: "",
     phone: "",
-    employeeId: "",
-    department: "",
     password: "",
     confirmPassword: "",
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const roles = [
-    { value: "production_manager", label: "Production Manager" },
-    { value: "inventory_manager", label: "Inventory Manager" },
-    { value: "quality_officer", label: "Quality Officer" },
-    { value: "sales_staff", label: "Sales Staff" },
-    { value: "administrator", label: "Administrator" },
-  ];
 
-  const departments = [
-    "Production",
-    "Inventory & Logistics",
-    "Quality Assurance",
-    "Sales & Marketing",
-    "IT & Administration",
-  ];
+
+
 
   const passwordRules = [
     { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
@@ -60,7 +45,6 @@ export function Registration() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.role) newErrors.role = "Please select a role";
     if (!formData.fullName) newErrors.fullName = "Full name is required";
     if (!formData.email) {
       newErrors.email = "Email is required";
@@ -68,8 +52,6 @@ export function Registration() {
       newErrors.email = "Invalid email format";
     }
     if (!formData.phone) newErrors.phone = "Phone number is required";
-    if (!formData.employeeId) newErrors.employeeId = "Employee ID is required";
-    if (!formData.department) newErrors.department = "Please select a department";
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (!isPasswordValid(formData.password)) {
@@ -88,12 +70,9 @@ export function Registration() {
     if (validateForm()) {
       try {
         await authApi.register({
-          role: formData.role,
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
-          employeeId: formData.employeeId,
-          department: formData.department,
           password: formData.password,
         });
         localStorage.setItem("pendingVerificationEmail", formData.email);
@@ -140,29 +119,6 @@ export function Registration() {
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Role <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                >
-                  <option value="">Select your role</option>
-                  {roles.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.role && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.role}
-                  </p>
-                )}
-              </div>
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -202,7 +158,7 @@ export function Registration() {
                 )}
               </div>
 
-              <div>
+              <div className="col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
@@ -221,47 +177,11 @@ export function Registration() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Employee ID <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.employeeId}
-                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                  placeholder="EMP-12345"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                />
-                {errors.employeeId && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.employeeId}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Department <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                >
-                  <option value="">Select department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-                {errors.department && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.department}
-                  </p>
-                )}
+              <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
+                <span className="text-amber-500 mt-0.5">ℹ️</span>
+                <p className="text-sm text-amber-800">
+                  Your <strong>department</strong> and <strong>role</strong> will be assigned by the system administrator after your account is verified.
+                </p>
               </div>
 
               <div className="col-span-2">
