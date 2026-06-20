@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(40) NOT NULL,
   employee_id VARCHAR(80) UNIQUE,
   role VARCHAR(40) NOT NULL CHECK (role IN ('pending','production_manager','inventory_manager','quality_officer','sales_staff','administrator')),
-  department VARCHAR(80) NOT NULL,
+  department VARCHAR(80),
   password_hash TEXT NOT NULL,
   email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   locked_until TIMESTAMPTZ,
   last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS verification_tokens (
@@ -701,6 +701,9 @@ ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('pending','pro
 
 -- Make employee_id nullable for pending users
 ALTER TABLE users ALTER COLUMN employee_id DROP NOT NULL;
+
+-- Make department nullable since it's assigned by admin later
+ALTER TABLE users ALTER COLUMN department DROP NOT NULL;
 
 -- Sequence for auto-generating employee IDs
 CREATE SEQUENCE IF NOT EXISTS employee_id_seq START WITH 1000;

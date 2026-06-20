@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { ShoppingCart, Plus, Clock, CheckCircle2, XCircle, DollarSign, AlertTriangle, X } from "lucide-react";
 import { inventoryApi, PurchaseOrder, Supplier, RawMaterial } from "../../services/inventoryApi";
+import { toast } from "sonner";
 
 export function PurchaseOrders() {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
@@ -9,7 +10,6 @@ export function PurchaseOrders() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [newPO, setNewPO] = useState({
     supplierId: "",
@@ -41,7 +41,7 @@ export function PurchaseOrders() {
       setSuppliers(sups);
       setMaterials(mats);
     } catch (err: any) {
-      setError(err.message || "Failed to load purchase order data");
+      toast.error(err.message || "Failed to load purchase order data");
     } finally {
       setLoading(false);
     }
@@ -50,15 +50,14 @@ export function PurchaseOrders() {
   const handleCreatePO = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManage) {
-      alert("Unauthorized: Only Inventory Managers or Administrators can create purchase orders.");
+      toast.error("Unauthorized: Only Inventory Managers or Administrators can create purchase orders.");
       return;
     }
     if (!newPO.supplierId || !newPO.materialId || newPO.quantity <= 0 || newPO.unitPrice <= 0) {
-      alert("Please fill all required fields correctly.");
+      toast.error("Please fill all required fields correctly.");
       return;
     }
     try {
-      setError("");
       await inventoryApi.createPurchaseOrder({
         supplierId: newPO.supplierId,
         materialId: newPO.materialId,
@@ -78,22 +77,23 @@ export function PurchaseOrders() {
         notes: "",
       });
       fetchData();
+      toast.success("Purchase order created successfully");
     } catch (err: any) {
-      setError(err.message || "Failed to create purchase order");
+      toast.error(err.message || "Failed to create purchase order");
     }
   };
 
   const handleUpdateStatus = async (id: string, status: "pending" | "approved" | "received" | "cancelled") => {
     if (!canManage) {
-      alert("Unauthorized: Only Inventory Managers or Administrators can update purchase order statuses.");
+      toast.error("Unauthorized: Only Inventory Managers or Administrators can update purchase order statuses.");
       return;
     }
     try {
-      setError("");
       await inventoryApi.updatePOStatus(id, status);
       fetchData();
+      toast.success(`Order status updated to ${status}`);
     } catch (err: any) {
-      setError(err.message || "Failed to update purchase order status");
+      toast.error(err.message || "Failed to update purchase order status");
     }
   };
 
@@ -132,13 +132,6 @@ export function PurchaseOrders() {
             </button>
           )}
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-4 gap-6">
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">

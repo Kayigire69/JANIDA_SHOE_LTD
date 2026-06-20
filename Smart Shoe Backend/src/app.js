@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import rateLimit from 'express-rate-limit'
+import path from 'path'
 import authRoutes from './modules/auth/auth.routes.js'
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js'
 import productionRoutes from './modules/production/production.routes.js'
@@ -22,6 +23,7 @@ const app = express()
 app.use(helmet())
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
 app.use(express.json({ limit: '1mb' }))
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 app.use(cookieParser())
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }))
 

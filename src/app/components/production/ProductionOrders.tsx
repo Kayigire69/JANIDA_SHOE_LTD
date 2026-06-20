@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { PlayCircle, Pause, CheckCircle2, Filter, Download, Eye, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import { productionApi, OrdersData } from "../../services/productionApi";
+import { toast } from "sonner";
 
 export function ProductionOrders() {
   const [loading, setLoading] = useState(true);
@@ -15,9 +16,8 @@ export function ProductionOrders() {
       setLoading(true);
       const res = await productionApi.getOrders();
       setData(res);
-      setError("");
     } catch (err: any) {
-      setError(err.message || "Failed to load orders");
+      toast.error(err.message || "Failed to load orders");
     } finally {
       setLoading(false);
     }
@@ -52,8 +52,9 @@ export function ProductionOrders() {
       setUpdatingId(id);
       await productionApi.updateOrderStatus(id, status, completedQuantity);
       await loadOrders(); // Refresh table and metrics
+      toast.success(`Order status updated to ${status}`);
     } catch (err: any) {
-      alert(err.message || "Failed to update order status");
+      toast.error(err.message || "Failed to update order status");
     } finally {
       setUpdatingId(null);
     }
@@ -110,25 +111,18 @@ export function ProductionOrders() {
           </button>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5" />
-            <span>{error}</span>
-          </div>
-        )}
-
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">
+          <div className="bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 border-l-4 border-blue-600 group">
             <div>
-              <p className="text-slate-600 text-sm font-medium">Total Orders</p>
+              <p className="text-slate-600 text-sm font-medium group-hover:text-blue-600 transition-colors">Total Orders</p>
               <p className="text-3xl font-bold text-slate-900 mt-2">{data?.metrics.totalOrders || 0}</p>
               <p className="text-slate-500 text-sm mt-1">active batches</p>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-emerald-600">
+          <div className="bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 border-l-4 border-emerald-600 group">
             <div>
-              <p className="text-slate-600 text-sm font-medium">Completed</p>
+              <p className="text-slate-600 text-sm font-medium group-hover:text-emerald-600 transition-colors">Completed</p>
               <p className="text-3xl font-bold text-slate-900 mt-2">{data?.metrics.completedCount || 0}</p>
               <p className="text-emerald-600 text-sm mt-1 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
@@ -136,16 +130,16 @@ export function ProductionOrders() {
               </p>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-600">
+          <div className="bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 border-l-4 border-amber-600 group">
             <div>
-              <p className="text-slate-600 text-sm font-medium">In Progress</p>
+              <p className="text-slate-600 text-sm font-medium group-hover:text-amber-600 transition-colors">In Progress</p>
               <p className="text-3xl font-bold text-slate-900 mt-2">{data?.metrics.inProgressCount || 0}</p>
               <p className="text-slate-500 text-sm mt-1">currently active</p>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-slate-600">
+          <div className="bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 border-l-4 border-slate-600 group">
             <div>
-              <p className="text-slate-600 text-sm font-medium">Planned</p>
+              <p className="text-slate-600 text-sm font-medium group-hover:text-slate-800 transition-colors">Planned</p>
               <p className="text-3xl font-bold text-slate-900 mt-2">{data?.metrics.plannedCount || 0}</p>
               <p className="text-slate-500 text-sm mt-1">awaiting start</p>
             </div>

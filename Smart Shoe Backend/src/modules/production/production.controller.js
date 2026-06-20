@@ -1,5 +1,33 @@
 import * as productionService from './production.service.js'
 
+// Machine CRUD
+export const createMachine = async (req, res, next) => {
+  try { const m = await productionService.createMachine(req.body); res.status(201).json(m) } catch (err) { next(err) }
+}
+export const listMachines = async (req, res, next) => {
+  try { const data = await productionService.listMachines(); res.json(data) } catch (err) { next(err) }
+}
+export const updateMachine = async (req, res, next) => {
+  try { const m = await productionService.updateMachine(req.params.id, req.body); res.json(m) } catch (err) { next(err) }
+}
+export const deleteMachine = async (req, res, next) => {
+  try { const r = await productionService.deleteMachine(req.params.id); res.json(r) } catch (err) { next(err) }
+}
+
+// Production Worker CRUD
+export const createProductionWorker = async (req, res, next) => {
+  try { const w = await productionService.createProductionWorker(req.body); res.status(201).json(w) } catch (err) { next(err) }
+}
+export const listProductionWorkers = async (req, res, next) => {
+  try { const data = await productionService.listProductionWorkers(); res.json(data) } catch (err) { next(err) }
+}
+export const updateProductionWorker = async (req, res, next) => {
+  try { const w = await productionService.updateProductionWorker(req.params.id, req.body); res.json(w) } catch (err) { next(err) }
+}
+export const deleteProductionWorker = async (req, res, next) => {
+  try { const r = await productionService.deleteProductionWorker(req.params.id); res.json(r) } catch (err) { next(err) }
+}
+
 export const getPlanningData = async (req, res, next) => {
   try {
     const data = await productionService.getPlanningData()

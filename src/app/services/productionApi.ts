@@ -89,4 +89,22 @@ export const productionApi = {
     }),
 
   getHistory: () => request<HistoryData>("/production/history"),
+
+  // Machine management
+  listMachines: () => request<{ machines: any[] }>("/production/machines"),
+  createMachine: (data: { code: string; name: string; status?: string }) =>
+    request<any>("/production/machines", { method: "POST", body: JSON.stringify(data) }),
+  updateMachine: (id: string, data: { name?: string; status?: string }) =>
+    request<any>(`/production/machines/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteMachine: (id: string) =>
+    request<{ message: string }>(`/production/machines/${id}`, { method: "DELETE" }),
+
+  // Production worker management
+  listProductionWorkers: () => request<{ workers: any[] }>("/production/workers"),
+  createProductionWorker: (data: { workerId: string; name: string; role?: string; department?: string; email: string; phone?: string }) =>
+    request<any>("/production/workers", { method: "POST", body: JSON.stringify(data) }),
+  updateProductionWorker: (id: string, data: { name?: string; role?: string; department?: string; phone?: string; status?: string }) =>
+    request<any>(`/production/workers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  deleteProductionWorker: (id: string) =>
+    request<{ message: string }>(`/production/workers/${id}`, { method: "DELETE" }),
 };

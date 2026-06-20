@@ -90,8 +90,8 @@ export function RolePermissions() {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 md:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">Role & Permission Management</h1>
             <p className="text-slate-600 text-sm mt-1">Configure access permissions for each role</p>

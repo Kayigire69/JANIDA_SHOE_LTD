@@ -53,6 +53,7 @@ export const authApi = {
   verifyMfaSetup: (body: unknown) => request<{ message: string }>("/auth/mfa/verify", { method: "POST", body: JSON.stringify(body) }),
   sessions: () => request<{ sessions: any[] }>("/auth/sessions"),
   logout: () => request<{ message: string }>("/auth/logout", { method: "POST" }),
+  getPublicSettings: () => request<{ settings: any[] }>("/auth/settings"),
 };
 
 export function storeAuthSession(token: string, user: any) {

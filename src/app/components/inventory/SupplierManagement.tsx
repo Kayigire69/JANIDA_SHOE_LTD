@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Building2, Plus, Mail, Phone, MapPin, Clock, TrendingUp, Star, AlertTriangle, X } from "lucide-react";
 import { inventoryApi, Supplier } from "../../services/inventoryApi";
+import { toast } from "sonner";
 
 export function SupplierManagement() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [newSupplier, setNewSupplier] = useState({
     name: "",
@@ -34,7 +34,7 @@ export function SupplierManagement() {
       const data = await inventoryApi.getSuppliers();
       setSuppliers(data);
     } catch (err: any) {
-      setError(err.message || "Failed to load suppliers");
+      toast.error(err.message || "Failed to load suppliers");
     } finally {
       setLoading(false);
     }
@@ -43,11 +43,10 @@ export function SupplierManagement() {
   const handleAddSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManage) {
-      alert("Unauthorized: Only Inventory Managers or Administrators can add suppliers.");
+      toast.error("Unauthorized: Only Inventory Managers or Administrators can add suppliers.");
       return;
     }
     try {
-      setError("");
       await inventoryApi.createSupplier({
         name: newSupplier.name,
         contact: newSupplier.contact,
@@ -67,8 +66,9 @@ export function SupplierManagement() {
         leadTime: 5,
       });
       fetchSuppliers();
+      toast.success("Supplier added successfully");
     } catch (err: any) {
-      setError(err.message || "Failed to add supplier");
+      toast.error(err.message || "Failed to add supplier");
     }
   };
 
@@ -100,13 +100,6 @@ export function SupplierManagement() {
             </button>
           )}
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-4 gap-6">
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">

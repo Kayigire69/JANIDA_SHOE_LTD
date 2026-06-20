@@ -24,8 +24,8 @@ export function SecuritySettings() {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 md:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">Security Settings</h1>
             <p className="text-slate-600 text-sm mt-1">Configure system security and access controls</p>
@@ -39,7 +39,7 @@ export function SecuritySettings() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4 flex items-center gap-3">
               <Shield className="w-5 h-5 text-blue-400" />

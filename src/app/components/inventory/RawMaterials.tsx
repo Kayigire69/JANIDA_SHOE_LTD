@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Package, Plus, Edit, AlertTriangle, TrendingDown, Download, DollarSign, X } from "lucide-react";
 import { inventoryApi, RawMaterial } from "../../services/inventoryApi";
+import { toast } from "sonner";
 
 export function RawMaterials() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   
   const [newMaterial, setNewMaterial] = useState({
     materialCode: "",
@@ -37,7 +37,7 @@ export function RawMaterials() {
       const data = await inventoryServiceGet();
       setMaterials(data);
     } catch (err: any) {
-      setError(err.message || "Failed to load raw materials");
+      toast.error(err.message || "Failed to load raw materials");
     } finally {
       setLoading(false);
     }
@@ -50,11 +50,10 @@ export function RawMaterials() {
   const handleAddMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManage) {
-      alert("Unauthorized: Only Inventory Managers or Administrators can add raw materials.");
+      toast.error("Unauthorized: Only Inventory Managers or Administrators can add raw materials.");
       return;
     }
     try {
-      setError("");
       await inventoryApi.createRawMaterial({
         materialCode: newMaterial.materialCode,
         name: newMaterial.name,
@@ -80,8 +79,9 @@ export function RawMaterials() {
         warehouseLocation: "WH-A-01",
       });
       fetchMaterials();
+      toast.success("Raw material added successfully");
     } catch (err: any) {
-      setError(err.message || "Failed to create raw material");
+      toast.error(err.message || "Failed to create raw material");
     }
   };
 
@@ -149,13 +149,6 @@ export function RawMaterials() {
             )}
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-5 gap-6">
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">

@@ -86,13 +86,13 @@ export function SystemHealth() {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">System Health Monitoring</h1>
+          <h1 className="text-xl md:text-2xl font-semibold text-slate-900">System Health Monitoring</h1>
           <p className="text-slate-600 text-sm mt-1">Real-time system status and performance</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {healthMetrics.map((metric, index) => {
             const Icon = metric.icon;
             const colors = getStatusColor(metric.status);
@@ -137,7 +137,7 @@ export function SystemHealth() {
 
         <div className="bg-white rounded-xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">System Overview</h3>
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-slate-50 rounded-lg">
               <p className="text-sm text-slate-600 mb-1">Overall Health</p>
               <p className="text-2xl font-bold text-emerald-600">98.9%</p>

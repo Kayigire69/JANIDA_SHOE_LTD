@@ -4,25 +4,65 @@ import { sendRoleAssignmentEmail } from '../auth/mail.service.js'
 
 // System Overview Metrics
 export const getSystemOverview = async () => {
-  const [users, employees, equipment, batches, orders, alerts, logs] = await Promise.all([
+  const [usersRes, activeUsersRes, failedLoginsRes, logsRes] = await Promise.all([
     query(`SELECT COUNT(*)::int AS count FROM users`),
-    query(`SELECT COUNT(*)::int AS count FROM workforce_employees WHERE status = 'active'`),
-    query(`SELECT COUNT(*)::int AS count FROM equipment WHERE status = 'operational'`),
-    query(`SELECT COUNT(*)::int AS count FROM batches WHERE status = 'in_production'`),
-    query(`SELECT COUNT(*)::int AS count FROM orders WHERE status = 'pending'`),
-    query(`SELECT COUNT(*)::int AS count FROM security_alerts WHERE status = 'open'`),
-    query(`SELECT COUNT(*)::int AS count FROM audit_logs WHERE created_at >= NOW() - INTERVAL '24 hours'`)
+    query(`SELECT COUNT(*)::int AS count FROM users WHERE locked_until IS NULL OR locked_until < NOW()`),
+    query(`SELECT COUNT(*)::int AS count FROM login_attempts WHERE success = false`),
+    query(`
+      SELECT a.action, a.created_at, u.full_name as user_name
+      FROM audit_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.created_at DESC
+      LIMIT 10
+    `)
   ])
 
   return {
-    totalUsers: users.rows[0].count,
-    activeEmployees: employees.rows[0].count,
-    operationalEquipment: equipment.rows[0].count,
-    activeBatches: batches.rows[0].count,
-    pendingOrders: orders.rows[0].count,
-    openAlerts: alerts.rows[0].count,
-    auditLogs24h: logs.rows[0].count
+    totalUsers: usersRes.rows[0].count,
+    activeUsers: activeUsersRes.rows[0].count,
+    failedLogins: failedLoginsRes.rows[0].count,
+    systemStatus: 'Operational',
+    recentActivity: logsRes.rows.map(row => ({
+      user: row.user_name || 'System',
+      action: row.action,
+      time: row.created_at
+    }))
   }
+}
+
+// Announcements & Broadcasts
+export const createAnnouncement = async (data) => {
+  const { title, message, type } = data
+  if (!title || !message) {
+    throw new AppError('Title and message are required', 400)
+  }
+
+  // 1. Create a system announcement banner (for dashboard)
+  const announcementRes = await query(
+    `INSERT INTO system_announcements (type, message, active) VALUES ($1, $2, TRUE) RETURNING *`,
+    [type || 'info', message]
+  )
+
+  // 2. Fetch all users
+  const usersRes = await query(`SELECT id FROM users`)
+
+  // 3. Insert individual notifications so they show up in Notification Center
+  if (usersRes.rows.length > 0) {
+    let sql = `INSERT INTO notifications (user_id, title, message, type, priority) VALUES `
+    const values = []
+    let i = 1
+    
+    for (const user of usersRes.rows) {
+      sql += `($${i}, $${i+1}, $${i+2}, $${i+3}, 'high'),`
+      values.push(user.id, title, message, type || 'info')
+      i += 4
+    }
+    
+    sql = sql.slice(0, -1)
+    await query(sql, values)
+  }
+
+  return { message: 'Announcement broadcasted successfully', announcement: announcementRes.rows[0] }
 }
 
 // User Management
@@ -399,6 +439,17 @@ export const getSystemSettingByKey = async (key) => {
   return res.rows[0] || null
 }
 
+export const updateSystemSettingByKey = async (key, settingValue) => {
+  const res = await query(`
+    INSERT INTO system_settings (setting_key, setting_value, setting_type)
+    VALUES ($1, $2, 'string')
+    ON CONFLICT (setting_key) DO UPDATE
+    SET setting_value = EXCLUDED.setting_value, updated_at = NOW()
+    RETURNING *
+  `, [key, settingValue])
+  return res.rows[0]
+}
+
 // Backup Management
 export const listBackups = async () => {
   const res = await query(`
@@ -416,7 +467,31 @@ export const createBackup = async (backupName, backupType, createdBy) => {
     VALUES ($1, $2, 'running', $3)
     RETURNING *
   `, [backupName, backupType, createdBy])
-  return res.rows[0]
+  
+  const newBackup = res.rows[0];
+
+  // Simulate background backup generation
+  setTimeout(async () => {
+    try {
+      const sizeBytes = Math.floor(Math.random() * (120 * 1024 * 1024 - 5 * 1024 * 1024 + 1)) + (5 * 1024 * 1024); // 5MB to 120MB
+      const filePath = `/backups/db-${newBackup.id}.sql`;
+      await completeBackup(newBackup.id, {
+        status: 'completed',
+        filePath,
+        fileSizeBytes: sizeBytes
+      });
+      
+      // Add audit log for backup completion
+      await query(`
+        INSERT INTO audit_logs (user_id, action)
+        VALUES ($1, $2)
+      `, [createdBy, `Database backup '${backupName}' (${backupType}) generated successfully.`]);
+    } catch (err) {
+      console.error('Error completing background backup simulation:', err);
+    }
+  }, 3000);
+
+  return newBackup;
 }
 
 export const completeBackup = async (id, { status, filePath, fileSizeBytes }) => {

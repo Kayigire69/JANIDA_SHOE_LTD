@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { AlertTriangle, TrendingDown, CheckCircle2, Clock, Loader2, AlertCircle, Wrench, Play } from "lucide-react";
 import { qualityApi, ReworkOrder } from "../../services/qualityApi";
+import { toast } from "sonner";
 
 export function DefectTracking() {
   const [reworkOrders, setReworkOrders] = useState<ReworkOrder[]>([]);
@@ -18,7 +19,7 @@ export function DefectTracking() {
       const data = await qualityApi.getReworkOrders();
       setReworkOrders(data);
     } catch (err: any) {
-      setError(err.message || "Failed to load defects and rework orders");
+      toast.error(err.message || "Failed to load defects and rework orders");
     } finally {
       setLoading(false);
     }
@@ -43,8 +44,9 @@ export function DefectTracking() {
       // Reload fresh data
       const data = await qualityApi.getReworkOrders();
       setReworkOrders(data);
+      toast.success(`Rework status updated to ${nextStatus}`);
     } catch (err: any) {
-      alert(err.message || "Failed to update rework status");
+      toast.error(err.message || "Failed to update rework status");
     } finally {
       setUpdatingId(null);
     }
@@ -107,11 +109,6 @@ export function DefectTracking() {
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
             <p className="text-slate-600 text-sm">Loading rework dispatch log...</p>
-          </div>
-        ) : error ? (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
           </div>
         ) : (
           <>

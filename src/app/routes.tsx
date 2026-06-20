@@ -12,7 +12,6 @@ import { ProductionManagerDashboard } from "./components/dashboards/ProductionMa
 import { InventoryManagerDashboard } from "./components/dashboards/InventoryManagerDashboard";
 import { QualityOfficerDashboard } from "./components/dashboards/QualityOfficerDashboard";
 import { SalesAdminDashboard } from "./components/dashboards/SalesAdminDashboard";
-import { AdministratorDashboard } from "./components/dashboards/AdministratorDashboard";
 import { SupervisorDashboard } from "./components/dashboards/SupervisorDashboard";
 import { dashboardPaths } from "./services/authApi";
 import { ProductionPlanning } from "./components/production/ProductionPlanning";
@@ -43,8 +42,21 @@ import { TaskManagement } from "./components/workforce/TaskManagement";
 import { PerformanceReviews } from "./components/workforce/PerformanceReviews";
 import { EquipmentCatalog } from "./components/equipment/EquipmentCatalog";
 import { SecurityAudit } from "./components/security/SecurityAudit";
-import { AdminPanel } from "./components/admin/AdminPanel";
 import { NotificationCenter } from "./components/notifications/NotificationCenter";
+import { ReportsCenter } from "./components/common/ReportsCenter";
+
+// Admin components
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { UserManagement } from "./components/admin/UserManagement";
+import { RolePermissions } from "./components/admin/RolePermissions";
+import { ProductsBOM } from "./components/admin/ProductsBOM";
+import { ProductionLines } from "./components/admin/ProductionLines";
+import { QualityStandards } from "./components/admin/QualityStandards";
+import { SystemSettings } from "./components/admin/SystemSettings";
+import { Backups } from "./components/admin/Backups";
+import { Announcements } from "./components/admin/Announcements";
+import { SystemHealth } from "./components/admin/SystemHealth";
+
 
 /** Reads the stored role and redirects to the correct role dashboard. */
 function RoleRedirect() {
@@ -113,7 +125,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/dashboard/admin",
-    Component: AdministratorDashboard,
+    Component: AdminDashboard,
   },
   {
     path: "/dashboard/supervisor",
@@ -233,10 +245,50 @@ export const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    Component: AdminPanel,
+    Component: () => <Navigate to="/dashboard/admin" replace />,
+  },
+  {
+    path: "/admin/users",
+    Component: UserManagement,
+  },
+  {
+    path: "/admin/roles",
+    Component: RolePermissions,
+  },
+  {
+    path: "/admin/products",
+    Component: ProductsBOM,
+  },
+  {
+    path: "/admin/lines",
+    Component: ProductionLines,
+  },
+  {
+    path: "/admin/quality",
+    Component: QualityStandards,
+  },
+  {
+    path: "/admin/settings",
+    Component: SystemSettings,
+  },
+  {
+    path: "/admin/backups",
+    Component: Backups,
+  },
+  {
+    path: "/admin/announcements",
+    Component: Announcements,
+  },
+  {
+    path: "/admin/health",
+    Component: SystemHealth,
   },
   {
     path: "/notifications",
     Component: NotificationCenter,
+  },
+  {
+    path: "/reports",
+    Component: ReportsCenter,
   },
 ]);

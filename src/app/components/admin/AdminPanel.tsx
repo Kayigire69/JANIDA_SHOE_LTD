@@ -4,7 +4,7 @@ import {
   Settings, Users, Package, Wrench, ClipboardCheck, Shield, Database,
   Search, Loader2, ChevronLeft, ChevronRight, Plus, X, Edit3, Trash2,
   Lock, Unlock, Activity, Server, HardDrive, AlertTriangle, CheckCircle2,
-  PlusCircle, ArrowLeft, ListOrdered, Cog
+  PlusCircle, ArrowLeft, ListOrdered, Cog, Bell
 } from "lucide-react";
 import { adminApi } from "../../services/adminApi";
 
@@ -16,6 +16,7 @@ const tabs = [
   { id: "quality", label: "Quality Standards", icon: ClipboardCheck },
   { id: "settings", label: "System Settings", icon: Settings },
   { id: "backups", label: "Backups", icon: Database },
+  { id: "announcements", label: "Announcements", icon: Bell },
 ] as const;
 
 export function AdminPanel() {
@@ -64,6 +65,10 @@ export function AdminPanel() {
   const [backups, setBackups] = useState<any[]>([]);
   const [backupName, setBackupName] = useState("");
   const [backupType, setBackupType] = useState("full");
+
+  // Announcements
+  const [announcementForm, setAnnouncementForm] = useState({ title: "", message: "", type: "info" });
+  const [announcementSuccess, setAnnouncementSuccess] = useState("");
 
   const fetchOverview = async () => {
     try {
@@ -261,6 +266,23 @@ export function AdminPanel() {
     if (!window.confirm("Delete this backup record?")) return;
     try { await adminApi.deleteBackup(id); fetchBackups(); }
     catch (err: any) { setError(err?.message || "Delete failed"); }
+  };
+
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementForm.title.trim() || !announcementForm.message.trim()) return;
+    setLoading(true);
+    setError("");
+    setAnnouncementSuccess("");
+    try {
+      await adminApi.createAnnouncement(announcementForm);
+      setAnnouncementSuccess("Announcement broadcasted successfully to all users.");
+      setAnnouncementForm({ title: "", message: "", type: "info" });
+    } catch (err: any) {
+      setError(err?.message || "Failed to broadcast announcement");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const roleOptions = ["pending", "production_manager", "inventory_manager", "quality_officer", "sales_staff", "supervisor", "administrator"];
@@ -825,6 +847,80 @@ export function AdminPanel() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Announcements Tab */}
+        {activeTab === "announcements" && (
+          <div className="bg-white rounded-xl shadow-md p-6 max-w-2xl mx-auto">
+            <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <Bell className="w-5 h-5 text-blue-600" />
+              Broadcast System Announcement
+            </h2>
+            <p className="text-sm text-slate-600 mb-6">
+              Create an announcement to be broadcasted to all users across the system. It will appear on their dashboard and Notification Center.
+            </p>
+
+            {announcementSuccess && (
+              <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">{announcementSuccess}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateAnnouncement} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Announcement Title</label>
+                <input
+                  required
+                  type="text"
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+                  placeholder="e.g., Scheduled Maintenance"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Message Detail</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={announcementForm.message}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+                  placeholder="Provide the details of the announcement here..."
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notification Type</label>
+                <select
+                  value={announcementForm.type}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, type: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                >
+                  <option value="info">Info (Blue)</option>
+                  <option value="success">Success (Green)</option>
+                  <option value="warning">Warning (Yellow)</option>
+                  <option value="alert">Alert (Red)</option>
+                </select>
+              </div>
+
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Broadcasting...</>
+                  ) : (
+                    <><Bell className="w-5 h-5" /> Broadcast Announcement</>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>

@@ -1,6 +1,71 @@
 import { query } from '../../config/db.js'
 import { AppError } from '../../utils/AppError.js'
 
+// ---- Machine CRUD ----
+export const createMachine = async ({ code, name, status = 'active' }) => {
+  if (!code || !name) throw new AppError('Machine code and name are required', 400)
+  const existing = await query('SELECT id FROM machines WHERE code = $1', [code])
+  if (existing.rowCount > 0) throw new AppError('Machine code already exists', 409)
+  const res = await query(
+    `INSERT INTO machines (code, name, status) VALUES ($1, $2, $3) RETURNING *`,
+    [code.trim(), name.trim(), status]
+  )
+  return res.rows[0]
+}
+
+export const listMachines = async () => {
+  const res = await query('SELECT id, code, name, status, created_at FROM machines ORDER BY code')
+  return { machines: res.rows }
+}
+
+export const updateMachine = async (id, { name, status }) => {
+  const res = await query(
+    `UPDATE machines SET name = COALESCE($1, name), status = COALESCE($2, status) WHERE id = $3 RETURNING *`,
+    [name || null, status || null, id]
+  )
+  if (res.rowCount === 0) throw new AppError('Machine not found', 404)
+  return res.rows[0]
+}
+
+export const deleteMachine = async (id) => {
+  await query('DELETE FROM machines WHERE id = $1', [id])
+  return { message: 'Machine deleted' }
+}
+
+// ---- Production Worker CRUD ----
+export const createProductionWorker = async ({ workerId, name, role = 'Production Operator', department = 'Production', email, phone }) => {
+  if (!workerId || !name || !email) throw new AppError('Worker ID, name, and email are required', 400)
+  const existing = await query('SELECT id FROM production_workers WHERE worker_id = $1 OR email = $2', [workerId, email])
+  if (existing.rowCount > 0) throw new AppError('Worker ID or email already exists', 409)
+  const res = await query(
+    `INSERT INTO production_workers (worker_id, name, role, department, email, phone, status) VALUES ($1, $2, $3, $4, $5, $6, 'active') RETURNING *`,
+    [workerId.trim(), name.trim(), role, department, email.trim(), phone || null]
+  )
+  return res.rows[0]
+}
+
+export const listProductionWorkers = async () => {
+  const res = await query('SELECT id, worker_id, name, role, department, email, phone, status, created_at FROM production_workers ORDER BY name')
+  return { workers: res.rows }
+}
+
+export const updateProductionWorker = async (id, { name, role, department, phone, status }) => {
+  const res = await query(
+    `UPDATE production_workers SET
+       name = COALESCE($1, name), role = COALESCE($2, role), department = COALESCE($3, department),
+       phone = COALESCE($4, phone), status = COALESCE($5, status)
+     WHERE id = $6 RETURNING *`,
+    [name || null, role || null, department || null, phone || null, status || null, id]
+  )
+  if (res.rowCount === 0) throw new AppError('Worker not found', 404)
+  return res.rows[0]
+}
+
+export const deleteProductionWorker = async (id) => {
+  await query('DELETE FROM production_workers WHERE id = $1', [id])
+  return { message: 'Worker deleted' }
+}
+
 // Helper to refresh dashboard metrics for the production_manager role dynamically
 export const refreshProductionDashboardMetrics = async () => {
   try {

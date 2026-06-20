@@ -179,3 +179,286 @@
     line-height: 1.5;
   }
 }
+
+/* Custom dark mode utility overrides to keep UI elements visible and consistent */
+.dark .bg-white:not(aside):not(aside *) {
+  background-color: var(--card) !important;
+}
+.dark .bg-slate-50:not(aside):not(aside *) {
+  background-color: var(--background) !important;
+}
+.dark .bg-slate-100:not(aside):not(aside *) {
+  background-color: oklch(0.24 0 0) !important;
+}
+.dark .bg-slate-200:not(aside):not(aside *) {
+  background-color: oklch(0.28 0 0) !important;
+}
+.dark .bg-slate-300:not(aside):not(aside *) {
+  background-color: oklch(0.35 0 0) !important;
+}
+.dark .bg-slate-400:not(aside):not(aside *) {
+  background-color: oklch(0.45 0 0) !important;
+}
+
+/* Alert and Status Badges overrides */
+.dark .bg-red-50:not(aside):not(aside *),
+.dark .bg-red-100:not(aside):not(aside *) {
+  background-color: oklch(0.25 0.08 20) !important;
+}
+.dark .bg-amber-50:not(aside):not(aside *),
+.dark .bg-amber-100:not(aside):not(aside *) {
+  background-color: oklch(0.25 0.06 70) !important;
+}
+.dark .bg-emerald-50:not(aside):not(aside *),
+.dark .bg-emerald-100:not(aside):not(aside *) {
+  background-color: oklch(0.25 0.08 140) !important;
+}
+.dark .bg-blue-50:not(aside):not(aside *),
+.dark .bg-blue-100:not(aside):not(aside *) {
+  background-color: oklch(0.25 0.08 250) !important;
+}
+
+/* Text overrides */
+.dark .text-slate-900:not(aside):not(aside *),
+.dark .text-black:not(aside):not(aside *),
+.dark .text-slate-800:not(aside):not(aside *) {
+  color: var(--foreground) !important;
+}
+.dark .text-slate-700:not(aside):not(aside *) {
+  color: oklch(0.85 0 0) !important;
+}
+.dark .text-slate-600:not(aside):not(aside *) {
+  color: oklch(0.8 0 0) !important;
+}
+.dark .text-slate-500:not(aside):not(aside *) {
+  color: oklch(0.7 0 0) !important;
+}
+.dark .text-slate-400:not(aside):not(aside *) {
+  color: oklch(0.65 0 0) !important;
+}
+
+/* Status text colors */
+.dark .text-red-700:not(aside):not(aside *),
+.dark .text-red-800:not(aside):not(aside *),
+.dark .text-red-600:not(aside):not(aside *) {
+  color: oklch(0.85 0.1 20) !important;
+}
+.dark .text-amber-700:not(aside):not(aside *),
+.dark .text-amber-800:not(aside):not(aside *),
+.dark .text-amber-600:not(aside):not(aside *) {
+  color: oklch(0.85 0.08 70) !important;
+}
+.dark .text-emerald-700:not(aside):not(aside *),
+.dark .text-emerald-800:not(aside):not(aside *),
+.dark .text-emerald-600:not(aside):not(aside *) {
+  color: oklch(0.85 0.1 140) !important;
+}
+.dark .text-blue-700:not(aside):not(aside *),
+.dark .text-blue-800:not(aside):not(aside *),
+.dark .text-blue-600:not(aside):not(aside *) {
+  color: oklch(0.85 0.1 250) !important;
+}
+
+/* Border overrides */
+.dark .border-slate-200:not(aside):not(aside *),
+.dark .border-slate-100:not(aside):not(aside *),
+.dark .border-slate-300:not(aside):not(aside *),
+.dark .border-gray-200:not(aside):not(aside *) {
+  border-color: var(--border) !important;
+}
+
+/* Hover overrides */
+.dark .hover\:bg-slate-50:not(aside):not(aside *):hover {
+  background-color: oklch(0.2 0 0) !important;
+}
+.dark .hover\:bg-slate-100:not(aside):not(aside *):hover {
+  background-color: oklch(0.24 0 0) !important;
+}
+.dark .hover\:bg-slate-200:not(aside):not(aside *):hover {
+  background-color: oklch(0.28 0 0) !important;
+}
+
+/* Inputs, Dropdowns and Textareas */
+.dark input:not(aside):not(aside *),
+.dark select:not(aside):not(aside *),
+.dark textarea:not(aside):not(aside *) {
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+  border-color: var(--border) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: oklch(0.6 0 0) !important;
+}
+.dark option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+/* Tables */
+.dark th {
+  color: var(--foreground) !important;
+}
+.dark td {
+  color: oklch(0.85 0 0) !important;
+}
+
+/* Toggle switches */
+.dark button span.bg-white {
+  background-color: #ffffff !important;
+}
+
+/* =============================================================
+   GLOBAL RESPONSIVE LAYOUT SYSTEM
+   Forces all fixed grid-cols-N layouts to be mobile-friendly.
+   This avoids editing every single component manually.
+   ============================================================= */
+
+/* Base: every page container gets comfortable padding on mobile */
+@layer base {
+  main > div {
+    min-width: 0;
+  }
+}
+
+/* On screens < 640px (mobile): collapse ALL fixed column grids to 1 column */
+@media (max-width: 639px) {
+  /* Fixed grids with 2+ columns collapse to 1 */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  /* Tables: make horizontally scrollable instead of breaking */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Page padding */
+  .p-8 {
+    padding: 1rem !important;
+  }
+  .p-6 {
+    padding: 0.875rem !important;
+  }
+
+  /* Cards spacing */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  /* Prevent oversized h1/h2 on mobile */
+  h1 {
+    font-size: 1.25rem !important;
+  }
+  h2 {
+    font-size: 1.1rem !important;
+  }
+
+  /* Flex rows that need to stack */
+  .flex.items-center.justify-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Action button groups stack vertically */
+  .flex.items-center.gap-3:has(button) {
+    flex-wrap: wrap;
+  }
+
+  /* Modals: full width */
+  .max-w-md,
+  .max-w-lg,
+  .max-w-xl,
+  .max-w-2xl {
+    max-width: calc(100vw - 2rem) !important;
+    margin: 0 1rem !important;
+  }
+
+  /* Fixed modals positioned for mobile */
+  .fixed.inset-0.z-50 > div {
+    margin: 0.5rem !important;
+    max-height: calc(100vh - 1rem) !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* On screens 640px–767px (small tablet): allow 2 columns max */
+@media (min-width: 640px) and (max-width: 767px) {
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .p-8 {
+    padding: 1.25rem !important;
+  }
+}
+
+/* On screens 768px–1023px (tablet): allow 3 columns max for large grids */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-cols-4,
+  .grid-cols-5,
+  .grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Overflow scroll wrapper for any wide tables or content */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Make sure cards and panels never overflow their container */
+.rounded-xl,
+.rounded-lg {
+  min-width: 0;
+}
+
+/* Security grid fix (grid-cols-2 in SecuritySettings) */
+@media (max-width: 767px) {
+  .grid.grid-cols-2.gap-6 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Responsive text wrapping for badges */
+.px-2.py-1,
+.px-2\.5.py-1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* Ensure select dropdowns don't overflow on mobile */
+@media (max-width: 639px) {
+  select {
+    max-width: 100%;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Announce panel fix */
+@media (max-width: 767px) {
+  .max-w-2xl {
+    max-width: 100% !important;
+  }
+}
+

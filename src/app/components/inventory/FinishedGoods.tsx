@@ -53,7 +53,7 @@ export function FinishedGoods() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-emerald-600">
             <p className="text-slate-600 text-sm font-medium">Total Products</p>
             <p className="text-3xl font-bold text-slate-900 mt-2">1,365</p>

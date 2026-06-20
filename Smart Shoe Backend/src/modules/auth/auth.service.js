@@ -287,3 +287,10 @@ export const listSessions = async (userId) => {
 
   return { sessions: result.rows }
 }
+
+export const getPublicSettings = async () => {
+  const res = await query(
+    `SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('company_name', 'company_logo_url')`
+  )
+  return { settings: res.rows }
+}

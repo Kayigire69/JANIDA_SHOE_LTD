@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { authenticate, authorize } from '../../middleware/auth.js'
+import { upload } from '../../middleware/upload.js'
 import * as controller from './admin.controller.js'
 
 const router = Router()
@@ -8,6 +9,9 @@ router.use(authorize('administrator'))
 
 // System overview
 router.get('/overview', controller.getSystemOverview)
+
+// Announcements
+router.post('/announcements', controller.createAnnouncement)
 
 // User management
 router.get('/users', controller.listUsers)
@@ -44,6 +48,7 @@ router.delete('/quality-standards/:id', controller.deleteQualityStandard)
 // System settings
 router.get('/settings', controller.listSystemSettings)
 router.patch('/settings/:id', controller.updateSystemSetting)
+router.post('/settings/logo', upload.single('logo'), controller.uploadLogo)
 
 // Backups
 router.get('/backups', controller.listBackups)

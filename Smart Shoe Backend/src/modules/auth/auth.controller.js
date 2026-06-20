@@ -115,3 +115,11 @@ export const sessions = async (req, res, next) => {
     next(err)
   }
 }
+
+export const getPublicSettings = async (req, res, next) => {
+  try {
+    res.json(await authService.getPublicSettings())
+  } catch (err) {
+    next(err)
+  }
+}

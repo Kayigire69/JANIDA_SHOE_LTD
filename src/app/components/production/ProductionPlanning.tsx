@@ -1,13 +1,26 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
-import { Package, Users, Settings, Plus, AlertCircle, Download, CheckCircle2, Loader2 } from "lucide-react";
-import { productionApi, PlanningData } from "../../services/productionApi";
+import {
+  Package, Users, Settings, Plus, AlertCircle, Download,
+  CheckCircle2, Loader2, Cpu, X, Trash2, UserPlus, Save, RefreshCw, Eye, PlayCircle, Pause
+} from "lucide-react";
+import { productionApi, PlanningData, OrdersData } from "../../services/productionApi";
+import { toast } from "sonner";
+
+type ModalType = "create-plan" | "add-machine" | "add-worker" | "manage-machines" | "manage-workers" | null;
 
 export function ProductionPlanning() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [data, setData] = useState<PlanningData | null>(null);
+  const [ordersData, setOrdersData] = useState<OrdersData | null>(null);
   const [error, setError] = useState("");
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+
+  // All machines and workers from separate manage endpoints
+  const [allMachines, setAllMachines] = useState<any[]>([]);
+  const [allWorkers, setAllWorkers] = useState<any[]>([]);
+  const [managingLoading, setManagingLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     productModelId: "",
@@ -22,7 +35,15 @@ export function ProductionPlanning() {
     Array<{ name: string; required: number; available: number; unit: string }>
   >([]);
 
-  // Fetch all planning metadata from database
+  // Machine form
+  const [machineForm, setMachineForm] = useState({ code: "", name: "", status: "active" });
+
+  // Worker form
+  const [workerForm, setWorkerForm] = useState({
+    workerId: "", name: "", role: "Production Operator",
+    department: "Production", email: "", phone: ""
+  });
+
   const loadPlanningData = async () => {
     try {
       setLoading(true);
@@ -31,34 +52,53 @@ export function ProductionPlanning() {
       setError("");
     } catch (err: any) {
       setError(err.message || "Failed to load planning configurations");
+      toast.error(err.message || "Failed to load planning configurations");
     } finally {
       setLoading(false);
     }
   };
 
+  const loadOrders = async () => {
+    try {
+      const res = await productionApi.getOrders();
+      setOrdersData(res);
+    } catch (err: any) {
+      toast.error("Failed to load production plans");
+    }
+  };
+
+  const loadAllMachines = async () => {
+    try {
+      const res = await productionApi.listMachines();
+      setAllMachines(res.machines || []);
+    } catch { /* ignore */ }
+  };
+
+  const loadAllWorkers = async () => {
+    try {
+      const res = await productionApi.listProductionWorkers();
+      setAllWorkers(res.workers || []);
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     loadPlanningData();
+    loadOrders();
+    loadAllMachines();
+    loadAllWorkers();
   }, []);
 
-  const sizes = ["6", "7", "8", "9", "10", "11", "12"];
+  const sizes = ["5", "6", "7", "8", "9", "10", "11", "12", "13"];
 
-  // Handle live calculation of materials requirement based on database BOM and target quantity
   const handleQuantityOrModelChange = (modelId: string, qtyStr: string) => {
     const qty = parseInt(qtyStr) || 0;
     if (!data) return;
-
     const selectedBOM = data.boms[modelId] || [];
     const calculated = data.materials.map((m) => {
       const bomItem = selectedBOM.find((item) => item.name === m.name);
       const required = bomItem ? bomItem.qtyPerPair * qty : 0;
-      return {
-        name: m.name,
-        required,
-        available: m.available,
-        unit: m.unit,
-      };
+      return { name: m.name, required, available: m.available, unit: m.unit };
     });
-
     setMaterialsRequirement(calculated);
   };
 
@@ -83,10 +123,9 @@ export function ProductionPlanning() {
 
   const handleSubmit = async () => {
     if (!formData.productModelId || !formData.size || !formData.targetQuantity || !formData.deadline || !formData.machineId || formData.workerIds.length === 0) {
-      alert("Please fill in all planning fields and assign at least one worker.");
+      toast.error("Please fill in all planning fields and assign at least one worker.");
       return;
     }
-
     try {
       setSubmitting(true);
       await productionApi.createPlan({
@@ -97,290 +136,740 @@ export function ProductionPlanning() {
         machineId: formData.machineId,
         workerIds: formData.workerIds,
       });
-
-      alert("Production plan created successfully!");
-      // Reset form
-      setFormData({
-        productModelId: "",
-        size: "",
-        targetQuantity: "",
-        deadline: "",
-        machineId: "",
-        workerIds: [],
-      });
+      setFormData({ productModelId: "", size: "", targetQuantity: "", deadline: "", machineId: "", workerIds: [] });
       setMaterialsRequirement([]);
+      toast.success("Production plan created successfully!");
+      closeModal();
       loadPlanningData();
+      loadOrders();
     } catch (err: any) {
-      alert(err.message || "Failed to create production plan");
+      toast.error(err.message || "Failed to create production plan");
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleExport = () => {
-    if (!data) return;
-    const selectedModel = data.shoeModels.find((m) => m.id === formData.productModelId)?.name || "N/A";
-    const selectedMachine = data.machines.find((m) => m.id === formData.machineId)?.name || "N/A";
-
-    const planData = {
-      model: selectedModel,
-      size: formData.size,
-      targetQuantity: formData.targetQuantity,
-      deadline: formData.deadline,
-      machine: selectedMachine,
-      workersCount: formData.workerIds.length,
-      materials: materialsRequirement,
-      timestamp: new Date().toISOString(),
-    };
-
-    const dataStr = JSON.stringify(planData, null, 2);
+    if (!ordersData?.orders) {
+      toast.error("No plans to export");
+      return;
+    }
+    const dataStr = JSON.stringify(ordersData.orders, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `production-plan-${Date.now()}.json`;
+    link.download = `production-plans-${Date.now()}.json`;
     link.click();
+    toast.success("Export successful");
   };
 
-  // Determine resource optimization checklist
+  // ---- Machine CRUD ----
+  const handleAddMachine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!machineForm.code.trim() || !machineForm.name.trim()) {
+      toast.error("Code and name are required.");
+      return;
+    }
+    setManagingLoading(true);
+    try {
+      await productionApi.createMachine({ code: machineForm.code.trim(), name: machineForm.name.trim(), status: machineForm.status });
+      setMachineForm({ code: "", name: "", status: "active" });
+      toast.success("Machine added successfully!");
+      await Promise.all([loadAllMachines(), loadPlanningData()]);
+      setActiveModal("manage-machines"); // Return to list view
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add machine");
+    } finally {
+      setManagingLoading(false);
+    }
+  };
+
+  const handleDeleteMachine = async (id: string) => {
+    if (!window.confirm("Delete this machine?")) return;
+    setManagingLoading(true);
+    try {
+      await productionApi.deleteMachine(id);
+      toast.success("Machine deleted");
+      await Promise.all([loadAllMachines(), loadPlanningData()]);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete machine");
+    } finally {
+      setManagingLoading(false);
+    }
+  };
+
+  const handleToggleMachineStatus = async (id: string, current: string) => {
+    const newStatus = current === "active" ? "maintenance" : "active";
+    try {
+      await productionApi.updateMachine(id, { status: newStatus });
+      toast.success("Machine status updated");
+      await Promise.all([loadAllMachines(), loadPlanningData()]);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update machine status");
+    }
+  };
+
+  // ---- Worker CRUD ----
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!workerForm.workerId.trim() || !workerForm.name.trim() || !workerForm.email.trim()) {
+      toast.error("Worker ID, name, and email are required.");
+      return;
+    }
+    setManagingLoading(true);
+    try {
+      await productionApi.createProductionWorker({
+        workerId: workerForm.workerId.trim(),
+        name: workerForm.name.trim(),
+        role: workerForm.role,
+        department: workerForm.department,
+        email: workerForm.email.trim(),
+        phone: workerForm.phone.trim() || undefined,
+      });
+      setWorkerForm({ workerId: "", name: "", role: "Production Operator", department: "Production", email: "", phone: "" });
+      toast.success("Worker added successfully!");
+      await Promise.all([loadAllWorkers(), loadPlanningData()]);
+      setActiveModal("manage-workers"); // return to list
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add worker");
+    } finally {
+      setManagingLoading(false);
+    }
+  };
+
+  const handleDeleteWorker = async (id: string) => {
+    if (!window.confirm("Delete this production worker?")) return;
+    setManagingLoading(true);
+    try {
+      await productionApi.deleteProductionWorker(id);
+      toast.success("Worker deleted");
+      await Promise.all([loadAllWorkers(), loadPlanningData()]);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete worker");
+    } finally {
+      setManagingLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
   const isBOMAvailable = materialsRequirement.every((m) => m.available >= m.required);
   const isMachineAssigned = !!formData.machineId;
   const isWorkersAssigned = formData.workerIds.length >= 2;
 
+  const statusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      active: "bg-emerald-100 text-emerald-700",
+      maintenance: "bg-amber-100 text-amber-700",
+      inactive: "bg-slate-100 text-slate-600",
+      Completed: "bg-emerald-100 text-emerald-700 border-emerald-300 border",
+      "In Progress": "bg-blue-100 text-blue-700 border-blue-300 border",
+      Planned: "bg-slate-100 text-slate-700 border-slate-300 border",
+      Paused: "bg-amber-100 text-amber-700 border-amber-300 border"
+    };
+    return (
+      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${colors[status] || "bg-slate-100 text-slate-600 border border-slate-300"}`}>
+        {status}
+      </span>
+    );
+  };
+
   return (
     <Layout>
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-4 md:p-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Production Planning</h1>
-            <p className="text-slate-600 text-sm mt-1">Create a new production plan</p>
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900">Production Planning</h1>
+            <p className="text-slate-600 text-sm mt-1">Manage and create production plans</p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 shadow-sm transition-all"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button
+              onClick={() => setActiveModal("create-plan")}
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Create Production Plan
+            </button>
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5" />
-            <span>{error}</span>
+        {data?.machines.length === 0 && !loading && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <p className="text-sm text-amber-800">
+              No machines found. Please <strong>manage machines</strong> when creating a plan.
+            </p>
           </div>
         )}
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-            <p className="text-slate-600 text-sm">Fetching production configurations from database...</p>
+        {/* Current Plans Table */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Package className="w-5 h-5 text-blue-600" /> Current Production Plans
+            </h2>
+            <button onClick={loadOrders} className="text-slate-500 hover:text-blue-600 transition-colors p-1" title="Refresh">
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 space-y-6">
-              {/* Product Details Form */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Package className="w-5 h-5 text-blue-600" />
-                  Product Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Product Model
-                    </label>
-                    <select
-                      value={formData.productModelId}
-                      onChange={(e) => handleModelSelect(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select model</option>
-                      {data?.shoeModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Size</label>
-                    <select
-                      value={formData.size}
-                      onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select size</option>
-                      {sizes.map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Target Quantity
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.targetQuantity}
-                      onChange={(e) => handleQuantityChange(e.target.value)}
-                      placeholder="Enter quantity"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Deadline
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+          
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                <p className="text-slate-600 text-sm">Loading plans...</p>
+              </div>
+            ) : (
+              <table className="w-full min-w-[800px]">
+                <thead className="bg-slate-100 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left py-3 px-6 text-sm font-semibold text-slate-600">Plan Code</th>
+                    <th className="text-left py-3 px-6 text-sm font-semibold text-slate-600">Product</th>
+                    <th className="text-left py-3 px-6 text-sm font-semibold text-slate-600">Target Qty</th>
+                    <th className="text-left py-3 px-6 text-sm font-semibold text-slate-600">Deadline</th>
+                    <th className="text-left py-3 px-6 text-sm font-semibold text-slate-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!ordersData?.orders || ordersData.orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-12 text-sm text-slate-500 italic">No production plans found. Create one above.</td>
+                    </tr>
+                  ) : (
+                    ordersData.orders.map((order) => (
+                      <tr key={order.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td className="py-4 px-6 text-sm font-medium text-slate-900 font-mono">{order.plan_code}</td>
+                        <td className="py-4 px-6 text-sm text-slate-700 font-semibold">{order.product}</td>
+                        <td className="py-4 px-6 text-sm text-slate-700">{order.completed} / {order.quantity}</td>
+                        <td className="py-4 px-6 text-sm text-slate-700">{order.deadline}</td>
+                        <td className="py-4 px-6">{statusBadge(order.status)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== MODALS ===== */}
+      {activeModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          {/* Create Plan Modal */}
+          {activeModal === "create-plan" && (
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-full">
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Plus className="w-6 h-6 text-blue-600" /> Create Production Plan
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Configure models, materials, and allocate resources</p>
                 </div>
+                <button onClick={closeModal} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
               </div>
 
-              {/* Resource Allocation */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-blue-600" />
-                  Resource Allocation
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Assign Machine
-                    </label>
-                    <select
-                      value={formData.machineId}
-                      onChange={(e) => setFormData({ ...formData, machineId: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select machine</option>
-                      {data?.machines.map((machine) => (
-                        <option key={machine.id} value={machine.id} disabled={machine.status !== "active"}>
-                          {machine.name} ({machine.status})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Assign Workers
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {data?.workers.map((worker) => (
-                        <label
-                          key={worker.id}
-                          className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
-                        >
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-8">
+                    {/* Product Details Form */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                      <h3 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2 pb-3 border-b border-slate-100">
+                        <Package className="w-5 h-5 text-blue-600" /> Product Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Product Model <span className="text-red-500">*</span></label>
+                          <select
+                            value={formData.productModelId}
+                            onChange={(e) => handleModelSelect(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                          >
+                            <option value="">Select model...</option>
+                            {data?.shoeModels.map((model) => (
+                              <option key={model.id} value={model.id}>{model.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Size <span className="text-red-500">*</span></label>
+                          <select
+                            value={formData.size}
+                            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                          >
+                            <option value="">Select size...</option>
+                            {sizes.map((size) => (
+                              <option key={size} value={size}>{size}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Target Quantity <span className="text-red-500">*</span></label>
                           <input
-                            type="checkbox"
-                            checked={formData.workerIds.includes(worker.id)}
-                            onChange={() => handleWorkerToggle(worker.id)}
-                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            type="number"
+                            value={formData.targetQuantity}
+                            onChange={(e) => handleQuantityChange(e.target.value)}
+                            placeholder="e.g. 500"
+                            min={1}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
                           />
-                          <span className="text-sm text-slate-700 font-medium">{worker.name}</span>
-                        </label>
-                      ))}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Deadline <span className="text-red-500">*</span></label>
+                          <input
+                            type="date"
+                            value={formData.deadline}
+                            onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resource Allocation */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+                      <h3 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2 pb-3 border-b border-slate-100">
+                        <Settings className="w-5 h-5 text-blue-600" /> Resource Allocation
+                      </h3>
+                      <div className="space-y-6">
+                        {/* Machine selector */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="block text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                              <Cpu className="w-4 h-4 text-blue-500" /> Assign Machine <span className="text-red-500">*</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => { setActiveModal("manage-machines"); loadAllMachines(); }}
+                              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors bg-blue-50 px-2.5 py-1 rounded-md"
+                            >
+                              <Settings className="w-3.5 h-3.5" /> Manage Machines
+                            </button>
+                          </div>
+                          {data?.machines.length === 0 ? (
+                            <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4" />
+                              No machines available. Add a machine first.
+                            </div>
+                          ) : (
+                            <select
+                              value={formData.machineId}
+                              onChange={(e) => setFormData({ ...formData, machineId: e.target.value })}
+                              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                            >
+                              <option value="">Select an active machine...</option>
+                              {data?.machines.map((machine) => (
+                                <option key={machine.id} value={machine.id} disabled={machine.status !== "active"}>
+                                  {machine.code} – {machine.name} ({machine.status})
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Worker selector */}
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="block text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                              <Users className="w-4 h-4 text-purple-500" /> Assign Workers <span className="text-red-500">*</span>
+                              {formData.workerIds.length > 0 && (
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                  {formData.workerIds.length} selected
+                                </span>
+                              )}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => { setActiveModal("manage-workers"); loadAllWorkers(); }}
+                              className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors bg-purple-50 px-2.5 py-1 rounded-md"
+                            >
+                              <Settings className="w-3.5 h-3.5" /> Manage Workers
+                            </button>
+                          </div>
+                          {data?.workers.length === 0 ? (
+                            <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4" />
+                              No active workers available. Add workers first.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                              {data?.workers.map((worker) => (
+                                <label
+                                  key={worker.id}
+                                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all ${
+                                    formData.workerIds.includes(worker.id)
+                                      ? "bg-blue-50/50 border-blue-500 shadow-sm"
+                                      : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.workerIds.includes(worker.id)}
+                                    onChange={() => handleWorkerToggle(worker.id)}
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm text-slate-900 font-medium truncate">{worker.name}</p>
+                                    <p className="text-xs text-slate-500 truncate">{worker.role}</p>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right column: BOM & Optimization */}
+                  <div className="space-y-6">
+                    {/* Optimization Status */}
+                    <div className={`rounded-xl p-5 border ${isMachineAssigned && isWorkersAssigned && isBOMAvailable && formData.productModelId ? "bg-emerald-50/50 border-emerald-200" : "bg-slate-50 border-slate-200"}`}>
+                      <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isMachineAssigned && isWorkersAssigned && isBOMAvailable && formData.productModelId ? "text-emerald-800" : "text-slate-800"}`}>
+                        <CheckCircle2 className="w-5 h-5" />
+                        Plan Readiness
+                      </h4>
+                      <ul className="text-sm space-y-2.5">
+                        <li className="flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isMachineAssigned ? "bg-emerald-500" : "bg-slate-300"}`}></span>
+                          <span className={isMachineAssigned ? "text-slate-700" : "text-slate-500"}>{isMachineAssigned ? "Machine allocated" : "Pending machine"}</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isWorkersAssigned ? "bg-emerald-500" : formData.workerIds.length > 0 ? "bg-amber-500" : "bg-slate-300"}`}></span>
+                          <span className={isWorkersAssigned ? "text-slate-700" : formData.workerIds.length > 0 ? "text-amber-700" : "text-slate-500"}>
+                            {isWorkersAssigned ? "Workers allocated (2+)" : formData.workerIds.length > 0 ? "More workers suggested" : "Pending workers"}
+                          </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isBOMAvailable && materialsRequirement.length > 0 ? "bg-emerald-500" : materialsRequirement.length > 0 ? "bg-red-500" : "bg-slate-300"}`}></span>
+                          <span className={isBOMAvailable && materialsRequirement.length > 0 ? "text-slate-700" : materialsRequirement.length > 0 ? "text-red-600 font-medium" : "text-slate-500"}>
+                            {isBOMAvailable && materialsRequirement.length > 0 ? "Materials sufficient" : materialsRequirement.length > 0 ? "Material shortage!" : "Pending materials"}
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Bill of Materials Summary */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col h-[320px]">
+                      <div className="p-5 border-b border-slate-100 flex-shrink-0">
+                        <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                          <Package className="w-5 h-5 text-blue-600" /> Bill of Materials
+                        </h3>
+                      </div>
+                      <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+                        {materialsRequirement.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-full text-center space-y-2">
+                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center">
+                              <Package className="w-6 h-6 text-slate-300" />
+                            </div>
+                            <p className="text-sm text-slate-500">Select model &amp; quantity<br/>to calculate demands.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {materialsRequirement.map((material, index) => {
+                              const isAvailable = material.available >= material.required;
+                              return (
+                                <div key={index} className={`p-3.5 rounded-xl border ${isAvailable ? "bg-slate-50 border-slate-100" : "bg-red-50/50 border-red-200"}`}>
+                                  <div className="flex items-center justify-between mb-2.5">
+                                    <span className="text-sm font-semibold text-slate-900">{material.name}</span>
+                                    {!isAvailable && material.required > 0 && (
+                                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between text-xs items-center">
+                                      <span className="text-slate-500 font-medium">Required</span>
+                                      <span className="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">{material.required.toFixed(1)} {material.unit}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs items-center">
+                                      <span className="text-slate-500 font-medium">Available</span>
+                                      <span className={`font-semibold px-2 py-0.5 rounded border shadow-sm ${isAvailable ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-red-700 bg-red-50 border-red-200"}`}>
+                                        {material.available} {material.unit}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bill of Materials Summary */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Package className="w-5 h-5 text-blue-600" />
-                  Bill of Materials
-                </h3>
-                <div className="space-y-3">
-                  {materialsRequirement.length === 0 ? (
-                    <p className="text-sm text-slate-500 italic text-center py-4">
-                      Select model & quantity to calculate material demands.
-                    </p>
-                  ) : (
-                    materialsRequirement.map((material, index) => {
-                      const isAvailable = material.available >= material.required;
-                      return (
-                        <div key={index} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-900">{material.name}</span>
-                            {!isAvailable && material.required > 0 && (
-                              <AlertCircle className="w-4 h-4 text-red-500" />
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-600">Required:</span>
-                              <span className="font-semibold text-slate-900">
-                                {material.required.toFixed(1)} {material.unit}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-slate-600">Available:</span>
-                              <span
-                                className={`font-semibold ${
-                                  isAvailable ? "text-emerald-600" : "text-red-600"
-                                }`}
-                              >
-                                {material.available} {material.unit}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Planning actions */}
-              <div className="space-y-3">
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="px-8 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
                 >
-                  {submitting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Plus className="w-5 h-5" />
-                  )}
-                  Create Production Plan
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save & Create Plan
                 </button>
-                <button
-                  onClick={handleExport}
-                  disabled={!formData.productModelId}
-                  className="w-full bg-slate-700 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Download className="w-4 h-4" />
-                  Export Plan
-                </button>
-              </div>
-
-              {/* Resource Optimization Card */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <h4 className="font-semibold text-emerald-900 mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Resource Optimization
-                </h4>
-                <ul className="text-sm text-emerald-800 space-y-1">
-                  <li>
-                    {isMachineAssigned ? "✓ Machine allocated optimally" : "• Machine allocation: Pending"}
-                  </li>
-                  <li>
-                    {isWorkersAssigned ? "✓ Worker allocation: Within capacity" : "• Worker allocation: 2+ suggested"}
-                  </li>
-                  <li>
-                    {isBOMAvailable ? "✓ Material availability: Sufficient" : "• Material availability: Shortage warning"}
-                  </li>
-                </ul>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Manage Machines Modal */}
+          {activeModal === "manage-machines" && (
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Cpu className="w-6 h-6 text-blue-600" /> Manage Production Machines
+                </h2>
+                <button onClick={() => setActiveModal("create-plan")} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-8">
+                {/* Add machine inline form */}
+                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2"><Plus className="w-4 h-4 text-blue-600" /> Add New Machine</h3>
+                  <form onSubmit={handleAddMachine} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Code</label>
+                      <input
+                        required value={machineForm.code}
+                        onChange={(e) => setMachineForm({ ...machineForm, code: e.target.value })}
+                        placeholder="e.g. M-001"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                    <div className="sm:col-span-4">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Machine Name</label>
+                      <input
+                        required value={machineForm.name}
+                        onChange={(e) => setMachineForm({ ...machineForm, name: e.target.value })}
+                        placeholder="e.g. Cut Master 2000"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Status</label>
+                      <select
+                        value={machineForm.status}
+                        onChange={(e) => setMachineForm({ ...machineForm, status: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
+                      >
+                        <option value="active">Active</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <button
+                        type="submit" disabled={managingLoading}
+                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60 transition-colors"
+                      >
+                        {managingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                        Add
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Machine list */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-slate-900">Registered Machines ({allMachines.length})</h3>
+                    <button onClick={loadAllMachines} className="text-xs text-slate-500 hover:text-blue-600 font-medium flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md transition-colors"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+                  </div>
+                  {allMachines.length === 0 ? (
+                    <div className="text-center bg-slate-50 rounded-xl border border-slate-200 border-dashed py-12">
+                      <Cpu className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-slate-500 text-sm font-medium">No machines registered yet.</p>
+                      <p className="text-slate-400 text-xs mt-1">Add your first machine using the form above.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {allMachines.map((m) => (
+                        <div key={m.id} className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Cpu className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-900 truncate">{m.code}</p>
+                                <p className="text-xs text-slate-500 truncate">{m.name}</p>
+                              </div>
+                            </div>
+                            {statusBadge(m.status)}
+                          </div>
+                          <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-100">
+                            <button
+                              onClick={() => handleToggleMachineStatus(m.id, m.status)}
+                              className="flex-1 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-md font-medium border border-slate-200 transition-colors"
+                            >
+                              {m.status === "active" ? "Set Maintenance" : "Set Active"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMachine(m.id)}
+                              className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-100 rounded-md transition-colors"
+                              title="Delete Machine"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="p-5 border-t border-slate-100 bg-slate-50">
+                <button onClick={() => setActiveModal("create-plan")} className="w-full py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors">
+                  Back to Planning
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Manage Workers Modal */}
+          {activeModal === "manage-workers" && (
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Users className="w-6 h-6 text-purple-600" /> Manage Production Workers
+                </h2>
+                <button onClick={() => setActiveModal("create-plan")} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-8">
+                {/* Add worker form */}
+                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2"><UserPlus className="w-4 h-4 text-purple-600" /> Register New Worker</h3>
+                  <form onSubmit={handleAddWorker} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Worker ID *</label>
+                      <input
+                        required value={workerForm.workerId}
+                        onChange={(e) => setWorkerForm({ ...workerForm, workerId: e.target.value })}
+                        placeholder="e.g. EMP-010"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Full Name *</label>
+                      <input
+                        required value={workerForm.name}
+                        onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })}
+                        placeholder="e.g. John Doe"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Email *</label>
+                      <input
+                        required type="email" value={workerForm.email}
+                        onChange={(e) => setWorkerForm({ ...workerForm, email: e.target.value })}
+                        placeholder="worker@company.com"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Role</label>
+                      <select
+                        value={workerForm.role}
+                        onChange={(e) => setWorkerForm({ ...workerForm, role: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
+                      >
+                        <option>Production Operator</option>
+                        <option>Production Manager</option>
+                        <option>Quality Inspector</option>
+                        <option>Machine Operator</option>
+                        <option>Maintenance Technician</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Department</label>
+                      <select
+                        value={workerForm.department}
+                        onChange={(e) => setWorkerForm({ ...workerForm, department: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
+                      >
+                        <option>Production</option>
+                        <option>Quality Assurance</option>
+                        <option>Inventory &amp; Logistics</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="submit" disabled={managingLoading}
+                        className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60 transition-colors"
+                      >
+                        {managingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Register Worker
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Worker list */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-slate-900">Production Workforce ({allWorkers.length})</h3>
+                    <button onClick={loadAllWorkers} className="text-xs text-slate-500 hover:text-purple-600 font-medium flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md transition-colors"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+                  </div>
+                  {allWorkers.length === 0 ? (
+                    <div className="text-center bg-slate-50 rounded-xl border border-slate-200 border-dashed py-12">
+                      <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                      <p className="text-slate-500 text-sm font-medium">No workers registered yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {allWorkers.map((w) => (
+                        <div key={w.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 border border-purple-200">
+                              <span className="text-sm font-bold text-purple-700">{w.name.charAt(0)}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900 truncate">{w.name}</p>
+                              <p className="text-xs text-slate-500 truncate">{w.worker_id} • {w.role}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteWorker(w.id)}
+                            className="p-2 bg-slate-50 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors flex-shrink-0"
+                            title="Remove Worker"
+                          >
+                            <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-500 transition-colors" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="p-5 border-t border-slate-100 bg-slate-50">
+                <button onClick={() => setActiveModal("create-plan")} className="w-full py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors">
+                  Back to Planning
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
     </Layout>
   );
 }

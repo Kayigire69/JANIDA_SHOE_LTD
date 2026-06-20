@@ -5,7 +5,8 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { Layout } from "../Layout";
 import { SystemAnnouncement } from "../common/SystemAnnouncement";
 import { dashboardApi } from "../../services/dashboardApi";
-import { exportToCSV, exportToPDF } from "../../utils/exportUtils";
+import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
+import { useSettings } from "../../context/SettingsContext";
 
 const roleTitles: Record<string, string> = {
   production_manager: "Production Manager",
@@ -44,6 +45,8 @@ const quickActions: Record<string, Array<{ label: string; path: string; icon: an
 };
 
 export function DynamicDashboard({ role }: { role: string }) {
+  const { companyName, logoUrl, API_BASE_URL } = useSettings();
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
@@ -87,6 +90,30 @@ export function DynamicDashboard({ role }: { role: string }) {
     exportToCSV(`${role}_dashboard_report`, rows);
   };
 
+  const handleExportPDF = async () => {
+    let cols: string[] = [];
+    let pdfRows: any[][] = [];
+    if (primaryRecords.length > 0) {
+      cols = Object.keys(primaryRecords[0]).map(k => k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
+      pdfRows = primaryRecords.map((record: any) => Object.keys(primaryRecords[0]).map(h => String(record[h])));
+    } else {
+      cols = ["Metrics", "Value", "Trend"];
+      pdfRows = metrics.map((m: any) => [m.title, m.value, m.trend || m.subtitle]);
+    }
+    
+    await generateStyledPDF({
+      filename: `${role}_dashboard_report`,
+      reportTitle: `${roleTitles[role]} Dashboard Report`,
+      sectionTitle: "1. DASHBOARD DETAIL IN PERIOD",
+      periodStart: new Date().toLocaleDateString(),
+      columns: cols,
+      rows: pdfRows,
+      companyName,
+      logoUrl: logoUrl || undefined,
+      apiBaseUrl: API_BASE_URL
+    });
+  };
+
   return (
     <Layout>
       <div className="p-4 md:p-8 space-y-6">
@@ -97,7 +124,7 @@ export function DynamicDashboard({ role }: { role: string }) {
 
         <div className="flex items-center justify-end gap-3 mb-2 print:hidden">
           <button 
-            onClick={exportToPDF}
+            onClick={handleExportPDF}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
           >
             <ClipboardCheck className="w-4 h-4" />

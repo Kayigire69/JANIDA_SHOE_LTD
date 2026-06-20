@@ -48,15 +48,18 @@ export function NotificationCenter() {
         notif.id === id ? { ...notif, read: true } : notif
       )
     );
+    window.dispatchEvent(new Event('notifications_updated'));
   };
 
   const markAllAsRead = async () => {
     await dashboardApi.markAllNotificationsRead();
     setNotifications(notifications.map((notif) => ({ ...notif, read: true })));
+    window.dispatchEvent(new Event('notifications_updated'));
   };
 
   const deleteNotification = (id: string) => {
     setNotifications(notifications.filter((notif) => notif.id !== id));
+    window.dispatchEvent(new Event('notifications_updated'));
   };
 
   const filteredNotifications = notifications.filter((notif) => {

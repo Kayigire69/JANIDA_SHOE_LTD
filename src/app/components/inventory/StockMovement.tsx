@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X, BarChart3, ClipboardCheck } from "lucide-react";
 import { inventoryApi, StockMovement as Movement, RawMaterial, FinishedGood } from "../../services/inventoryApi";
-import { exportToCSV, exportToPDF } from "../../utils/exportUtils";
+import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
+import { useSettings } from "../../context/SettingsContext";
+import { toast } from "sonner";
 
 export function StockMovement() {
+  const { companyName, logoUrl, API_BASE_URL } = useSettings();
   const [movements, setMovements] = useState<Movement[]>([]);
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [finishedGoods, setFinishedGoods] = useState<FinishedGood[]>([]);
   const [filterMaterial, setFilterMaterial] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustType, setAdjustType] = useState<"in" | "out">("in");
@@ -40,7 +42,7 @@ export function StockMovement() {
       const data = await inventoryApi.getStockMovements(filterMaterial, filterDate);
       setMovements(data);
     } catch (err: any) {
-      setError(err.message || "Failed to load stock movements");
+      toast.error(err.message || "Failed to load stock movements");
     } finally {
       setLoading(false);
     }
@@ -62,18 +64,17 @@ export function StockMovement() {
   const handleRecordMovement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canManage) {
-      alert("Unauthorized: Only Inventory Managers or Administrators can record stock movements.");
+      toast.error("Unauthorized: Only Inventory Managers or Administrators can record stock movements.");
       return;
     }
     const isRaw = newMovement.itemType === "raw_material";
     const itemId = isRaw ? newMovement.rawMaterialId : newMovement.finishedGoodId;
     if (!itemId || newMovement.quantity <= 0) {
-      alert("Please fill all required fields.");
+      toast.error("Please fill all required fields.");
       return;
     }
 
     try {
-      setError("");
       const payload = {
         itemType: newMovement.itemType,
         rawMaterialId: isRaw ? newMovement.rawMaterialId : undefined,
@@ -102,8 +103,9 @@ export function StockMovement() {
       });
       fetchMovements();
       fetchOptions();
+      toast.success("Stock movement recorded successfully");
     } catch (err: any) {
-      setError(err.message || "Failed to log movement");
+      toast.error(err.message || "Failed to log movement");
     }
   };
 
@@ -127,6 +129,29 @@ export function StockMovement() {
     exportToCSV("stock_movement_report", rows);
   };
 
+  const handleExportPDF = async () => {
+    await generateStyledPDF({
+      filename: "stock-movement-report",
+      reportTitle: "Stock Movement Report",
+      sectionTitle: "1. STOCK MOVEMENT IN PERIOD",
+      periodStart: filterDate || "All Time",
+      columns: ["Log ID", "Item", "Type", "Direction", "Quantity", "Reference", "Location", "Date"],
+      rows: movements.map(m => [
+        m.id.substring(0, 8),
+        m.material,
+        m.unit === "pairs" ? "Finished Good" : "Raw Material",
+        m.type.toUpperCase(),
+        `${m.type === "in" ? "+" : "-"}${m.quantity} ${m.unit}`,
+        m.reference || "-",
+        m.location || "-",
+        new Date(m.date).toLocaleDateString()
+      ]),
+      companyName,
+      logoUrl: logoUrl || undefined,
+      apiBaseUrl: API_BASE_URL
+    });
+  };
+
   return (
     <Layout>
       <div className="p-8 space-y-6">
@@ -138,7 +163,7 @@ export function StockMovement() {
           <div className="flex items-center gap-3">
             <div className="flex gap-2 print:hidden mr-4">
               <button 
-                onClick={exportToPDF}
+                onClick={handleExportPDF}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
               >
                 <ClipboardCheck className="w-4 h-4" />
@@ -178,13 +203,6 @@ export function StockMovement() {
             )}
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="grid grid-cols-3 gap-4 mb-6">

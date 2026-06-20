@@ -9,6 +9,16 @@ export const getSystemOverview = async (req, res, next) => {
   }
 }
 
+export const createAnnouncement = async (req, res, next) => {
+  try {
+    const result = await adminService.createAnnouncement(req.body)
+    res.status(201).json(result)
+  } catch (err) {
+    next(err)
+  }
+}
+
+
 export const listUsers = async (req, res, next) => {
   try {
     const data = await adminService.listUsers(req.query)
@@ -220,6 +230,20 @@ export const updateSystemSetting = async (req, res, next) => {
   try {
     const setting = await adminService.updateSystemSetting(req.params.id, req.body)
     res.json(setting)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const uploadLogo = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const logoUrl = `/uploads/${req.file.filename}`;
+    // Assuming setting_key for logo is 'company_logo_url'
+    const setting = await adminService.updateSystemSettingByKey('company_logo_url', logoUrl);
+    res.json({ setting, logoUrl });
   } catch (err) {
     next(err)
   }

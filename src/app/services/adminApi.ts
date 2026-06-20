@@ -18,6 +18,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const adminApi = {
   // System overview
   getSystemOverview: () => request<any>("/admin/overview"),
+  createAnnouncement: (data: { title: string; message: string; type: string }) =>
+    request<{ message: string; announcement: any }>("/admin/announcements", { method: "POST", body: JSON.stringify(data) }),
 
   // Users
   listUsers: (params?: Record<string, string>) =>
@@ -75,6 +77,20 @@ export const adminApi = {
   listSystemSettings: () => request<{ settings: any[] }>("/admin/settings"),
   updateSystemSetting: (id: string, settingValue: string) =>
     request<any>(`/admin/settings/${id}`, { method: "PATCH", body: JSON.stringify({ settingValue }) }),
+  uploadLogo: (formData: FormData) => {
+    const token = localStorage.getItem("authToken");
+    return fetch(`${API_URL}/admin/settings/logo`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData, // do not set Content-Type header, let browser set it with boundary
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      return data;
+    });
+  },
 
   // Backups
   listBackups: () => request<{ backups: any[] }>("/admin/backups"),

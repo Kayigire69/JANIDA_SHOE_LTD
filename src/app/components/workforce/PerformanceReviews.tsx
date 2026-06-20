@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Plus, Search, Star, Award, TrendingUp, BarChart3, ClipboardCheck, X } from "lucide-react";
-import { exportToCSV, exportToPDF } from "../../utils/exportUtils";
+import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
 import { workforceApi } from "../../services/workforceApi";
+import { useSettings } from "../../context/SettingsContext";
+import { toast } from "sonner";
 
 export function PerformanceReviews() {
+  const { companyName, logoUrl, API_BASE_URL } = useSettings();
   const [reviews, setReviews] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +47,9 @@ export function PerformanceReviews() {
       });
       setShowModal(false);
       fetchData();
+      toast.success("Review created successfully");
     } catch (err) {
-      alert("Failed to create review");
+      toast.error("Failed to create review");
     }
   };
 
@@ -67,6 +71,27 @@ export function PerformanceReviews() {
     exportToCSV("performance_reviews", rows);
   };
 
+  const handleExportPDF = async () => {
+    await generateStyledPDF({
+      filename: "performance-reviews",
+      reportTitle: "Performance Reviews Report",
+      sectionTitle: "1. PERFORMANCE REVIEWS DETAIL IN PERIOD",
+      periodStart: new Date().toLocaleDateString(),
+      columns: ["Worker", "Productivity", "Quality", "Attendance", "Overall", "Date"],
+      rows: reviews.map(r => [
+        r.worker_name,
+        `${r.productivity_score}%`,
+        `${r.quality_score}%`,
+        `${r.attendance_score}%`,
+        `${r.overall_score}%`,
+        new Date(r.created_at).toLocaleDateString()
+      ]),
+      companyName,
+      logoUrl: logoUrl || undefined,
+      apiBaseUrl: API_BASE_URL
+    });
+  };
+
   return (
     <Layout>
       <div className="p-8 space-y-6">
@@ -77,7 +102,7 @@ export function PerformanceReviews() {
           </div>
           <div className="flex items-center gap-3 print:hidden">
             <button 
-              onClick={exportToPDF}
+              onClick={handleExportPDF}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
             >
               <ClipboardCheck className="w-4 h-4" />
