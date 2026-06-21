@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquare, X, Send, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { MessageSquare, X, Send, Loader2, Sparkles, AlertCircle, Maximize2, Minimize2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { productionApi } from "../../services/productionApi";
@@ -11,12 +11,19 @@ interface Message {
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "model",
-      content: "Hello! I am your AI Production Assistant. I can forecast production capabilities, resolve scheduling conflicts, or advise on upcoming deadlines. How can I help you today?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const userRaw = localStorage.getItem("authUser");
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const userRole = user?.role || "Production Manager";
+    const userFullName = user ? `${user.firstName} ${user.lastName}` : "";
+    return [
+      {
+        role: "model",
+        content: `Good morning ${userRole} ${userFullName}! I am your AI Production Assistant. I can forecast production capabilities, resolve scheduling conflicts, or advise on upcoming deadlines. How can I help you today?`,
+      },
+    ];
+  });
+  const [isMaximized, setIsMaximized] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +67,7 @@ export function AIAssistant() {
         - Shift Details: ${scheduleData ? Object.keys(scheduleData.shifts).join(", ") : "Unknown"}
         
         When formatting your response:
+        - Address the user properly.
         - Use clean, well-structured Markdown (lists, bold text, headers).
         - Be direct, professional, and actionable. Do not use generic filler words.
         - Recommend specific actions (e.g., "Shift workers from morning to afternoon", "Auto-resolve conflicts for Machine A").
@@ -109,7 +117,11 @@ export function AIAssistant() {
 
       {/* Chat Window */}
       <div
-        className={`absolute bottom-0 right-0 w-[380px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all origin-bottom-right ${
+        className={`${
+          isMaximized 
+            ? "fixed inset-4 w-auto h-auto rounded-2xl z-[60]"
+            : "absolute bottom-0 right-0 w-[380px] h-[550px] rounded-2xl"
+        } bg-white shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all origin-bottom-right ${
           isOpen ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"
         }`}
         style={{ transitionDuration: "300ms" }}
@@ -125,12 +137,20 @@ export function AIAssistant() {
               <p className="text-[11px] text-indigo-100 font-medium">Powered by Gemini 2.5 Flash</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsMaximized(!isMaximized)}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => { setIsOpen(false); setIsMaximized(false); }}
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Error Banner */}

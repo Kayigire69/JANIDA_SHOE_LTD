@@ -103,9 +103,18 @@ export function BatchCreation() {
   return (
     <Layout>
       <div className="p-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Create New Batch</h1>
-          <p className="text-slate-500 text-sm mt-1">Initialize a new production batch backed by materials and active orders</p>
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-800 rounded-3xl p-8 text-white shadow-2xl mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-32 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl"></div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
+              <Package className="w-8 h-8 text-blue-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Create New Batch</h1>
+              <p className="text-blue-100 text-sm mt-1.5 font-medium max-w-xl">Initialize a new production batch backed by materials and active orders. Ensure all parameters are correctly configured before dispatching.</p>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -131,7 +140,7 @@ export function BatchCreation() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Batch Association */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-8 space-y-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Package className="w-5 h-5 text-blue-600" />
                   Order & Model Linkage
@@ -144,7 +153,7 @@ export function BatchCreation() {
                     <select
                       value={selectedPlanId}
                       onChange={(e) => handlePlanChange(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all"
                     >
                       <option value="">Standalone Batch (No Order)</option>
                       {activePlans.map((plan) => (
@@ -163,8 +172,8 @@ export function BatchCreation() {
                       value={formData.shoeModelId}
                       onChange={(e) => setFormData({ ...formData, shoeModelId: e.target.value })}
                       disabled={!!selectedPlanId}
-                      className={`w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium ${
-                        selectedPlanId ? "bg-slate-100 cursor-not-allowed opacity-80" : "bg-slate-50"
+                      className={`w-full px-5 py-3.5 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all ${
+                        selectedPlanId ? "bg-slate-100 cursor-not-allowed opacity-80" : "bg-slate-50 hover:bg-white"
                       }`}
                     >
                       <option value="">Select Shoe Model</option>
@@ -186,14 +195,14 @@ export function BatchCreation() {
                       onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                       placeholder="e.g. 150"
                       min="1"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Materials Consumed */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-8 space-y-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Package className="w-5 h-5 text-emerald-600" />
                   Raw Materials Allocation
@@ -206,7 +215,7 @@ export function BatchCreation() {
                     <select
                       value={formData.rawMaterialId}
                       onChange={(e) => setFormData({ ...formData, rawMaterialId: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all"
                     >
                       <option value="">Select Material</option>
                       {planningData?.materials.map((mat) => (
@@ -226,14 +235,14 @@ export function BatchCreation() {
                       value={formData.materialBatchNumber}
                       onChange={(e) => setFormData({ ...formData, materialBatchNumber: e.target.value })}
                       placeholder="e.g. LOT-202604A"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all hover:bg-white"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Parameters */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-8 space-y-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
                 <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Production Telemetry</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
@@ -246,7 +255,7 @@ export function BatchCreation() {
                       value={formData.temperature}
                       onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
                       placeholder="150"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all hover:bg-white"
                     />
                   </div>
 
@@ -260,7 +269,7 @@ export function BatchCreation() {
                       value={formData.pressure}
                       onChange={(e) => setFormData({ ...formData, pressure: e.target.value })}
                       placeholder="45"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all hover:bg-white"
                     />
                   </div>
 
@@ -274,7 +283,7 @@ export function BatchCreation() {
                       value={formData.time}
                       onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                       placeholder="120"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm font-medium"
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 text-sm font-medium transition-all hover:bg-white"
                     />
                   </div>
                 </div>
@@ -283,7 +292,7 @@ export function BatchCreation() {
 
             {/* Sidebar checklist & actions */}
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+              <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 p-8 space-y-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <User className="w-5 h-5 text-indigo-600" />
                   Operator Assignment
@@ -295,7 +304,7 @@ export function BatchCreation() {
                   <select
                     value={formData.operatorId}
                     onChange={(e) => setFormData({ ...formData, operatorId: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 text-sm font-medium"
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 text-sm font-medium transition-all"
                   >
                     <option value="">Select lead operator</option>
                     {planningData?.workers.map((worker) => (
@@ -307,7 +316,7 @@ export function BatchCreation() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-6 space-y-4 shadow-xl">
+              <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 text-white rounded-3xl p-8 space-y-6 shadow-[0_10px_40px_rgb(79,70,229,0.2)] transform hover:-translate-y-1 transition-all duration-300">
                 <h4 className="font-bold text-md tracking-wide text-indigo-400">Pre-Initialization Checklist</h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
@@ -327,7 +336,7 @@ export function BatchCreation() {
                 <button
                   type="submit"
                   disabled={submitting || !formData.shoeModelId || !formData.quantity || !formData.operatorId || !formData.rawMaterialId || !formData.materialBatchNumber}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-4 rounded-xl font-bold transition-all duration-300 shadow-[0_5px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_8px_20px_rgb(79,70,229,0.4)] flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 hover:-translate-y-0.5"
                 >
                   {submitting ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

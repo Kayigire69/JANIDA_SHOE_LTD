@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
-import { Package, Plus, Edit, AlertTriangle, TrendingDown, Download, DollarSign, X } from "lucide-react";
-import { inventoryApi, RawMaterial } from "../../services/inventoryApi";
+import { Package, Plus, Edit, AlertTriangle, TrendingDown, DollarSign, X } from "lucide-react";
+import { inventoryApi, RawMaterial, Warehouse } from "../../services/inventoryApi";
+import { getCurrentRole } from "../../services/session";
 import { toast } from "sonner";
 
 export function RawMaterials() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,29 +24,30 @@ export function RawMaterials() {
     warehouseLocation: "WH-A-01",
   });
 
-  const userRaw = localStorage.getItem("user");
-  const user = userRaw ? JSON.parse(userRaw) : null;
-  const userRole = user?.role;
-  const canManage = userRole === "inventory_manager" || userRole === "administrator";
+  const userRole = getCurrentRole();
+  const canManage = userRole === "Inventory Manager" || userRole === "Administrator";
 
   useEffect(() => {
-    fetchMaterials();
+    fetchMaterialsAndWarehouses();
   }, []);
 
-  const fetchMaterials = async () => {
+  const fetchMaterialsAndWarehouses = async () => {
     try {
       setLoading(true);
-      const data = await inventoryServiceGet();
-      setMaterials(data);
+      const [materialsData, warehousesData] = await Promise.all([
+        inventoryApi.getRawMaterials(),
+        inventoryApi.getWarehouses()
+      ]);
+      setMaterials(materialsData);
+      setWarehouses(warehousesData);
+      if (warehousesData.length > 0 && newMaterial.warehouseLocation === "WH-A-01") {
+        setNewMaterial(prev => ({ ...prev, warehouseLocation: warehousesData[0].id }));
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to load raw materials");
+      toast.error(err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
-  };
-
-  const inventoryServiceGet = async () => {
-    return await inventoryApi.getRawMaterials();
   };
 
   const handleAddMaterial = async (e: React.FormEvent) => {
@@ -76,9 +79,9 @@ export function RawMaterials() {
         maximum: 1000,
         unitCost: 0,
         supplier: "",
-        warehouseLocation: "WH-A-01",
+        warehouseLocation: warehouses.length > 0 ? warehouses[0].id : "",
       });
-      fetchMaterials();
+      fetchMaterialsAndWarehouses();
       toast.success("Raw material added successfully");
     } catch (err: any) {
       toast.error(err.message || "Failed to create raw material");
@@ -107,115 +110,114 @@ export function RawMaterials() {
   const lowCount = materials.filter(m => m.status === "low").length;
   const normalCount = materials.filter(m => m.status === "normal").length;
 
-  const handleExport = () => {
-    // Generate CSV
-    const headers = ["Material ID,Name,Quantity,Unit,Minimum,Maximum,Warehouse Location,Unit Cost,Total Value,Supplier,Last Restocked,Status"];
-    const rows = filteredMaterials.map(m => 
-      `"${m.idCode}","${m.name}",${m.quantity},"${m.unit}",${m.minimum},${m.maximum},"${m.warehouseLocation}",${m.unitCost},${(m.quantity * m.unitCost).toFixed(2)},"${m.supplier || ''}","${m.lastRestocked || ''}","${m.status}"`
-    );
-    const csvContent = headers.concat(rows).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `raw-materials-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-  };
+
 
   return (
     <Layout>
       <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Raw Materials Inventory</h1>
-            <p className="text-slate-600 text-sm mt-1">Manage and track raw material stock levels</p>
+        <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-3xl p-8 text-white shadow-2xl mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
+              <Package className="w-8 h-8 text-blue-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Raw Materials Inventory</h1>
+              <p className="text-blue-100 text-sm mt-1.5 font-medium max-w-xl">Manage and track raw material stock levels, reorder points, and supplier logistics.</p>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
-            >
-              <Download className="w-4 h-4" />
-              Export CSV
-            </button>
-            {canManage && (
+          <div className="relative z-10">
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-bold transition-all duration-300 shadow-[0_5px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_8px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
                 Add Material
               </button>
-            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-6">
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Total Materials</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{materials.length}</p>
-                <p className="text-slate-500 text-sm mt-1">types in stock</p>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Total Materials</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{materials.length}</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">types in stock</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-blue-600" />
               </div>
             </div>
+            <div className="w-full h-1 bg-blue-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-blue-500 rounded-full"></div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-emerald-600">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Normal Stock</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{normalCount}</p>
-                <p className="text-emerald-600 text-sm mt-1">Above minimum</p>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Normal Stock</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{normalCount}</p>
+                <p className="text-emerald-500 text-xs mt-1 font-medium">Above minimum</p>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-600 text-sm font-medium">Low Stock</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{lowCount}</p>
-                <p className="text-amber-600 text-sm mt-1">Needs restocking</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <TrendingDown className="w-6 h-6 text-amber-600" />
-              </div>
+            <div className="w-full h-1 bg-emerald-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-emerald-500 rounded-full"></div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-600">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Critical Stock</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{criticalCount}</p>
-                <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Low Stock</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{lowCount}</p>
+                <p className="text-amber-500 text-xs mt-1 font-medium">Needs restocking</p>
+              </div>
+              <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center">
+                <TrendingDown className="w-6 h-6 text-amber-600" />
+              </div>
+            </div>
+            <div className="w-full h-1 bg-amber-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-amber-500 rounded-full"></div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Critical Stock</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{criticalCount}</p>
+                <p className="text-red-500 text-xs mt-1 font-medium flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   Urgent action
                 </p>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
             </div>
+            <div className="w-full h-1 bg-red-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-red-500 rounded-full"></div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-slate-600">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Inventory Value</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${(totalInventoryValue / 1000).toFixed(1)}k</p>
-                <p className="text-slate-500 text-sm mt-1">total stock value</p>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Inventory Value</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{totalInventoryValue.toLocaleString()} <span className="text-base font-bold text-slate-400">RWF</span></p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">total stock value</p>
               </div>
-              <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-slate-600" />
               </div>
+            </div>
+            <div className="w-full h-1 bg-slate-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-slate-400 rounded-full"></div>
             </div>
           </div>
         </div>
@@ -227,7 +229,7 @@ export function RawMaterials() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by material code, name, or supplier..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
             />
           </div>
 
@@ -264,9 +266,9 @@ export function RawMaterials() {
                         {material.minimum} / {material.maximum} {material.unit}
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-600 font-mono">{material.warehouseLocation}</td>
-                      <td className="py-4 px-6 text-sm text-slate-700">${material.unitCost.toFixed(2)}</td>
+                      <td className="py-4 px-6 text-sm text-slate-700">{material.unitCost.toLocaleString()} RWF</td>
                       <td className="py-4 px-6 text-sm font-semibold text-slate-900">
-                        ${(material.quantity * material.unitCost).toLocaleString()}
+                        {(material.quantity * material.unitCost).toLocaleString()} RWF
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-700">{material.supplier || "-"}</td>
                       <td className="py-4 px-6 text-sm text-slate-600">{material.lastRestocked || "-"}</td>
@@ -354,10 +356,9 @@ export function RawMaterials() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Unit Cost ($)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Unit Cost (RWF)</label>
                   <input
                     type="number"
-                    step="0.01"
                     min="0"
                     value={newMaterial.unitCost}
                     onChange={(e) => setNewMaterial({ ...newMaterial, unitCost: Number(e.target.value) })}
@@ -392,13 +393,16 @@ export function RawMaterials() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Warehouse Location</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. WH-A-02"
+                  <select
                     value={newMaterial.warehouseLocation}
                     onChange={(e) => setNewMaterial({ ...newMaterial, warehouseLocation: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
+                  >
+                    <option value="" disabled>Select a Warehouse</option>
+                    {warehouses.map(wh => (
+                      <option key={wh.id} value={wh.id}>{wh.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Supplier</label>

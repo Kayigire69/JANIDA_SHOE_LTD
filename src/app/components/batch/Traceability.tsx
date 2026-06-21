@@ -8,6 +8,7 @@ export function Traceability() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchId, setSearchId] = useState("");
   const [batch, setBatch] = useState<Batch | null>(null);
+  const [recentBatches, setRecentBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -39,6 +40,16 @@ export function Traceability() {
 
   // Check query params on mount/change (for QR code scan redirection)
   useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const data = await batchApi.getBatches();
+        setRecentBatches(data.slice(0, 5)); // Show top 5
+      } catch (err) {
+        console.error("Could not fetch recent batches", err);
+      }
+    };
+    fetchRecent();
+
     const searchVal = searchParams.get("search");
     if (searchVal) {
       setSearchId(searchVal);
@@ -402,12 +413,47 @@ export function Traceability() {
             </div>
           </div>
         ) : (
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
-            <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Search for a Product</h3>
-            <p className="text-slate-500 max-w-sm mx-auto">
-              Enter a batch number above to perform a complete genealogy and telemetry search.
-            </p>
+          <div className="space-y-6">
+            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
+              <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Search for a Product</h3>
+              <p className="text-slate-500 max-w-sm mx-auto">
+                Enter a batch number above to perform a complete genealogy and telemetry search.
+              </p>
+            </div>
+            
+            {recentBatches.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-blue-500" />
+                  Recent Production Batches
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recentBatches.map(rb => (
+                    <div 
+                      key={rb.id} 
+                      onClick={() => {
+                        setSearchId(rb.batch_number);
+                        setSearchParams({ search: rb.batch_number });
+                        fetchBatch(rb.batch_number);
+                      }}
+                      className="p-4 border border-slate-100 rounded-xl hover:shadow-md hover:border-blue-200 cursor-pointer transition-all bg-slate-50 hover:bg-blue-50/50 group"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-mono font-bold text-slate-800 group-hover:text-blue-700">{rb.batch_number}</span>
+                        <span className={`text-xxs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                          rb.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {rb.status}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">{rb.shoe_model_name}</p>
+                      <p className="text-xs text-slate-400 mt-2">Station: {rb.location}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

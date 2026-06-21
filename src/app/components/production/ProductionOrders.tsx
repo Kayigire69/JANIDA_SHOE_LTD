@@ -27,16 +27,6 @@ export function ProductionOrders() {
     loadOrders();
   }, []);
 
-  const handleExport = () => {
-    if (!data) return;
-    const dataStr = JSON.stringify(data.orders, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `production-orders-${Date.now()}.json`;
-    link.click();
-  };
 
   const handleStatusUpdate = async (id: string, status: string) => {
     let completedQuantity: number | undefined = undefined;
@@ -101,14 +91,6 @@ export function ProductionOrders() {
             <h1 className="text-2xl font-semibold text-slate-900">Production Orders</h1>
             <p className="text-slate-600 text-sm mt-1">Manage and track production orders</p>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={!data}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            Export Orders
-          </button>
         </div>
 
         {/* Metrics Grid */}

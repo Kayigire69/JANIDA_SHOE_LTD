@@ -59,7 +59,7 @@ export function ReportsCenter() {
           const data = await productionApi.getOrders().then(res => res.orders).catch(() => []);
           if (data.length === 0) throw new Error("No report data yet");
           columns = ["Order ID", "Product", "Quantity", "Status"];
-          rows = data.map((o: any) => [o.id, o.productName, o.quantity?.toString() || "-", o.status]);
+          rows = data.map((o: any) => [o.id, o.product || "-", o.quantity?.toString() || "-", o.status]);
         } else if (reportType === "inventory") {
           const data = await inventoryApi.getRawMaterials().then(res => res.materials).catch(() => []);
           if (data.length === 0) throw new Error("No report data yet");

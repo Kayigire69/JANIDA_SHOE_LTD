@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
-import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X, BarChart3, ClipboardCheck } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X, BarChart3, ClipboardCheck, TrendingUp } from "lucide-react";
 import { inventoryApi, StockMovement as Movement, RawMaterial, FinishedGood } from "../../services/inventoryApi";
 import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
 import { useSettings } from "../../context/SettingsContext";
+import { getCurrentRole } from "../../services/session";
 import { toast } from "sonner";
 
 export function StockMovement() {
@@ -26,10 +27,8 @@ export function StockMovement() {
     warehouseLocation: "",
   });
 
-  const userRaw = localStorage.getItem("user");
-  const user = userRaw ? JSON.parse(userRaw) : null;
-  const userRole = user?.role;
-  const canManage = userRole === "inventory_manager" || userRole === "administrator";
+  const userRole = getCurrentRole();
+  const canManage = userRole === "Inventory Manager" || userRole === "Administrator";
 
   useEffect(() => {
     fetchMovements();
@@ -155,23 +154,29 @@ export function StockMovement() {
   return (
     <Layout>
       <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Stock Movement Logs</h1>
-            <p className="text-slate-600 text-sm mt-1">Real-time recording and historical tracking of inventory</p>
+        <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-3xl p-8 text-white shadow-2xl mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
+              <TrendingUp className="w-8 h-8 text-blue-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Stock Movement Logs</h1>
+              <p className="text-blue-100 text-sm mt-1.5 font-medium max-w-xl">Real-time recording and historical tracking of inventory transfers and adjustments.</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="relative z-10 flex items-center gap-3">
             <div className="flex gap-2 print:hidden mr-4">
               <button 
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
                 <ClipboardCheck className="w-4 h-4" />
                 Export PDF
               </button>
               <button 
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
                 <BarChart3 className="w-4 h-4" />
                 Export Excel
@@ -184,20 +189,20 @@ export function StockMovement() {
                     setAdjustType("in");
                     setShowAdjustModal(true);
                   }}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all shadow-lg"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl font-bold transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5"
                 >
                   <ArrowUpRight className="w-4 h-4" />
-                  Record Stock-In
+                  Stock-In
                 </button>
                 <button
                   onClick={() => {
                     setAdjustType("out");
                     setShowAdjustModal(true);
                   }}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all shadow-lg"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-xl font-bold transition-all text-sm shadow-[0_4px_14px_0_rgb(225,29,72,0.39)] hover:shadow-[0_6px_20px_rgba(225,29,72,0.23)] hover:-translate-y-0.5"
                 >
                   <ArrowDownLeft className="w-4 h-4" />
-                  Record Stock-Out
+                  Stock-Out
                 </button>
               </div>
             )}
@@ -213,16 +218,16 @@ export function StockMovement() {
                 value={filterMaterial}
                 onChange={(e) => setFilterMaterial(e.target.value)}
                 placeholder="Search by material code or SKU..."
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
               />
             </div>
             <div className="relative">
-              <Calendar className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+              <Calendar className="absolute left-3 top-4 w-4 h-4 text-slate-400" />
               <input
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
               />
             </div>
             <button
@@ -230,7 +235,7 @@ export function StockMovement() {
                 setFilterMaterial("");
                 setFilterDate("");
               }}
-              className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
+              className="py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-sm font-bold transition-all"
             >
               Reset Filters
             </button>

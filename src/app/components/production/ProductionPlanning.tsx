@@ -149,21 +149,6 @@ export function ProductionPlanning() {
     }
   };
 
-  const handleExport = () => {
-    if (!ordersData?.orders) {
-      toast.error("No plans to export");
-      return;
-    }
-    const dataStr = JSON.stringify(ordersData.orders, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `production-plans-${Date.now()}.json`;
-    link.click();
-    toast.success("Export successful");
-  };
-
   // ---- Machine CRUD ----
   const handleAddMachine = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,13 +271,6 @@ export function ProductionPlanning() {
             <p className="text-slate-600 text-sm mt-1">Manage and create production plans</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 shadow-sm transition-all"
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
             <button
               onClick={() => setActiveModal("create-plan")}
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all"

@@ -24,6 +24,7 @@ export function UserManagement() {
     "Quality Assurance",
     "Sales & Marketing",
     "IT & Administration",
+    "Supervision"
   ];
 
   const fetchUsers = async (page = userPagination.page) => {

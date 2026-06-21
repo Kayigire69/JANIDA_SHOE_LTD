@@ -47,51 +47,6 @@ export function ProductionHistory() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
-  const handleExport = () => {
-    if (filteredHistory.length === 0) return;
-    
-    const headers = [
-      "Production ID",
-      "Product",
-      "Size",
-      "Completed Qty",
-      "Target Qty",
-      "Start Date",
-      "End Date",
-      "Operator",
-      "Machine",
-      "Efficiency (%)",
-      "Defect Rate (%)",
-      "Status"
-    ];
-    
-    const csvRows = [
-      headers.join(","),
-      ...filteredHistory.map((item) => [
-        `"${item.id}"`,
-        `"${item.product}"`,
-        `"${item.size}"`,
-        item.completed,
-        item.quantity,
-        `"${item.startDate}"`,
-        `"${item.endDate}"`,
-        `"${item.operator}"`,
-        `"${item.machine}"`,
-        item.efficiency,
-        item.status === "Completed" ? item.defectRate : "-",
-        `"${item.status}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvRows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `production_history_report_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -125,14 +80,6 @@ export function ProductionHistory() {
               Complete production records and performance analysis
             </p>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={filteredHistory.length === 0}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            Export Report
-          </button>
         </div>
 
         {error && (

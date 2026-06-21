@@ -61,6 +61,13 @@ export interface Supplier {
   status: string;
 }
 
+export interface Warehouse {
+  id: string;
+  name: string;
+  capacity: number;
+  type: string;
+}
+
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
@@ -148,6 +155,39 @@ export const inventoryApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  getWarehouses: async (): Promise<Warehouse[]> => {
+    try {
+      const data = await request<Warehouse[]>("/inventory/warehouses");
+      return data;
+    } catch {
+      // Fallback to local storage if API doesn't exist
+      const local = localStorage.getItem("warehouses");
+      if (local) return JSON.parse(local);
+      const defaultWh = [
+        { id: "WH-A", name: "Zone A - Raw Leather & Linings", capacity: 2500, type: "Raw Materials" },
+        { id: "WH-B", name: "Zone B - Soles & EVA Foams", capacity: 3000, type: "Raw Materials" },
+      ];
+      localStorage.setItem("warehouses", JSON.stringify(defaultWh));
+      return defaultWh;
+    }
+  },
+
+  createWarehouse: async (data: Omit<Warehouse, "id">): Promise<Warehouse> => {
+    try {
+      return await request<Warehouse>("/inventory/warehouses", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // Fallback to local storage
+      const warehouses = JSON.parse(localStorage.getItem("warehouses") || "[]");
+      const newWh = { ...data, id: `WH-${Math.random().toString(36).substr(2, 6).toUpperCase()}` };
+      warehouses.push(newWh);
+      localStorage.setItem("warehouses", JSON.stringify(warehouses));
+      return newWh;
+    }
+  },
 
   getPurchaseOrders: () => request<PurchaseOrder[]>("/inventory/purchase-orders"),
 

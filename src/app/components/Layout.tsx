@@ -90,18 +90,11 @@ export function Layout({ children }: LayoutProps) {
     "Inventory Manager": [
       { path: "/dashboard/inventory", icon: LayoutDashboard, label: "Dashboard" },
       { path: "/inventory/raw-materials", icon: Package, label: "Raw Materials" },
-      { path: "/admin/products", icon: Package, label: "Products & BOM" },
-      { path: "/inventory/finished-goods", icon: Box, label: "Finished Goods" },
       { path: "/inventory/stock-movement", icon: TrendingUp, label: "Stock Movement" },
-      { path: "/inventory/purchase-orders", icon: ShoppingCart, label: "Purchase Orders" },
       { path: "/inventory/suppliers", icon: Building2, label: "Suppliers" },
       { path: "/inventory/warehouse-locations", icon: MapPin, label: "Warehouses" },
       { path: "/traceability", icon: QrCode, label: "Traceability" },
-      { path: "/workforce/directory", icon: Users, label: "Workforce" },
-      { path: "/equipment/catalog", icon: Cog, label: "Equipment" },
-      { path: "/security/audit", icon: Shield, label: "Security" },
       { path: "/reports", icon: FileText, label: "Reports Center" },
-      { path: "/notifications", icon: Bell, label: "Notifications" },
     ],
     "Quality Officer": [
       { path: "/dashboard/quality", icon: LayoutDashboard, label: "Dashboard" },

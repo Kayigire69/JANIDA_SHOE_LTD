@@ -41,17 +41,6 @@ export function ProductionSchedule() {
     loadScheduleData();
   }, []);
 
-  const handleExportSchedule = () => {
-    if (!schedule) return;
-    const dataStr = JSON.stringify({ schedule, orders: orders?.orders }, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `production-schedule-${Date.now()}.json`;
-    link.click();
-  };
-
   const handleOptimize = async () => {
     try {
       setOptimizing(true);
@@ -133,14 +122,6 @@ export function ProductionSchedule() {
                 <CheckCircle2 className="w-4 h-4" />
               )}
               Optimize Schedule
-            </button>
-            <button
-              onClick={handleExportSchedule}
-              disabled={!schedule}
-              className="px-6 py-3 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export
             </button>
           </div>
         </div>

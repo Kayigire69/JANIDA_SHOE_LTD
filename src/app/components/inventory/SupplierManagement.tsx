@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Building2, Plus, Mail, Phone, MapPin, Clock, TrendingUp, Star, AlertTriangle, X } from "lucide-react";
 import { inventoryApi, Supplier } from "../../services/inventoryApi";
+import { getCurrentRole } from "../../services/session";
 import { toast } from "sonner";
 
 export function SupplierManagement() {
@@ -19,10 +20,8 @@ export function SupplierManagement() {
     leadTime: 5,
   });
 
-  const userRaw = localStorage.getItem("user");
-  const user = userRaw ? JSON.parse(userRaw) : null;
-  const userRole = user?.role;
-  const canManage = userRole === "inventory_manager" || userRole === "administrator";
+  const userRole = getCurrentRole();
+  const canManage = userRole === "Inventory Manager" || userRole === "Administrator";
 
   useEffect(() => {
     fetchSuppliers();
@@ -85,78 +84,98 @@ export function SupplierManagement() {
   return (
     <Layout>
       <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Supplier Management</h1>
-            <p className="text-slate-600 text-sm mt-1">Manage supplier information and performance</p>
+        <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-3xl p-8 text-white shadow-2xl mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
+              <Building2 className="w-8 h-8 text-blue-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Supplier Management</h1>
+              <p className="text-blue-100 text-sm mt-1.5 font-medium max-w-xl">Manage supplier information, track performance ratings, and monitor delivery logistics.</p>
+            </div>
           </div>
-          {canManage && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
-            >
-              <Plus className="w-4 h-4" />
-              Add Supplier
-            </button>
-          )}
+          <div className="relative z-10">
+            {canManage && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-bold transition-all duration-300 shadow-[0_5px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_8px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5"
+              >
+                <Plus className="w-5 h-5" />
+                Add Supplier
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-600">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Total Suppliers</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{suppliers.length}</p>
-                <p className="text-slate-500 text-sm mt-1">active partners</p>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Total Suppliers</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{suppliers.length}</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium">active partners</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
                 <Building2 className="w-6 h-6 text-blue-600" />
               </div>
             </div>
+            <div className="w-full h-1 bg-blue-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-blue-500 rounded-full"></div>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-emerald-600">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">Avg Rating</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{avgRating.toFixed(1)}</p>
-                <p className="text-emerald-600 text-sm mt-1 flex items-center gap-1">
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Avg Rating</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{avgRating.toFixed(1)}</p>
+                <p className="text-emerald-500 text-xs mt-1 font-medium flex items-center gap-1">
                   <Star className="w-3 h-3 fill-current" />
                   out of 5.0
                 </p>
               </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
                 <Star className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-600 text-sm font-medium">Avg Lead Time</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{avgLeadTime.toFixed(1)}</p>
-                <p className="text-slate-500 text-sm mt-1">days</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-600" />
-              </div>
+            <div className="w-full h-1 bg-emerald-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-emerald-500 rounded-full" style={{ width: `${(avgRating / 5) * 100}%` }}></div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-slate-600">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="text-slate-600 text-sm font-medium">On-Time Delivery</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">{avgOnTime.toFixed(1)}%</p>
-                <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">Avg Lead Time</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{avgLeadTime.toFixed(1)}</p>
+                <p className="text-amber-500 text-xs mt-1 font-medium">days</p>
+              </div>
+              <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+            </div>
+            <div className="w-full h-1 bg-amber-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-amber-500 rounded-full"></div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex flex-col justify-between transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-semibold tracking-wide">On-Time Delivery</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-2">{avgOnTime.toFixed(1)}%</p>
+                <p className="text-slate-400 text-xs mt-1 font-medium flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   average
                 </p>
               </div>
-              <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-slate-600" />
               </div>
+            </div>
+            <div className="w-full h-1 bg-slate-100 mt-4 rounded-full overflow-hidden">
+              <div className="w-full h-full bg-slate-400 rounded-full" style={{ width: `${avgOnTime}%` }}></div>
             </div>
           </div>
         </div>
@@ -168,7 +187,7 @@ export function SupplierManagement() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by supplier name or ID..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-5 py-4 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 font-medium transition-all"
             />
           </div>
 
@@ -179,10 +198,10 @@ export function SupplierManagement() {
           ) : (
             <div className="grid grid-cols-2 gap-6">
               {filteredSuppliers.map((supplier) => (
-                <div key={supplier.id} className="border border-slate-200 rounded-xl p-6 hover:bg-slate-50 transition-colors">
+                <div key={supplier.id} className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-semibold text-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-inner border border-white/20">
                         {supplier.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                       </div>
                       <div>

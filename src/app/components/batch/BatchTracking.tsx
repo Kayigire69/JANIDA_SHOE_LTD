@@ -108,17 +108,24 @@ export function BatchTracking() {
   return (
     <Layout>
       <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Batch Tracking</h1>
-            <p className="text-slate-500 text-sm mt-1">Real-time status monitoring and station transitions</p>
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 rounded-3xl p-8 text-white shadow-2xl mb-8 relative overflow-hidden flex items-center justify-between">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/20 shadow-inner">
+              <RefreshCw className="w-8 h-8 text-indigo-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">Batch Tracking</h1>
+              <p className="text-indigo-100 text-sm mt-1.5 font-medium max-w-xl">Real-time status monitoring and station transitions across the factory floor.</p>
+            </div>
           </div>
           <button
             onClick={loadBatches}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-all"
+            className="relative z-10 flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-sm font-bold transition-all backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
             <RefreshCw className="w-4 h-4" />
-            Refresh
+            Refresh Tracker
           </button>
         </div>
 
@@ -146,12 +153,13 @@ export function BatchTracking() {
               {batches.map((batch) => (
                 <div
                   key={batch.id}
-                  className={`bg-white rounded-2xl shadow-sm border border-slate-100 border-l-4 cursor-pointer hover:shadow-md transition-all ${
-                    selectedBatchId === batch.id ? "ring-2 ring-blue-500" : ""
-                  } ${getStatusColor(batch.status)}`}
+                  className={`bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden ${
+                    selectedBatchId === batch.id ? "ring-2 ring-indigo-500 ring-offset-2" : ""
+                  }`}
                   onClick={() => setSelectedBatchId(batch.id)}
                 >
-                  <div className="p-5">
+                  <div className={`h-1.5 w-full ${getStatusColor(batch.status).replace("border-", "bg-").replace("bg-", "bg-")}`}></div>
+                  <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
@@ -212,8 +220,11 @@ export function BatchTracking() {
               {selectedBatch ? (
                 <>
                   {/* Lifecycle Stages */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
-                    <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Batch Lifecycle</h3>
+                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/80 p-8 space-y-6">
+                    <h3 className="text-lg font-extrabold text-slate-900 border-b border-slate-100 pb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-indigo-500" />
+                      Batch Lifecycle
+                    </h3>
                     <div className="relative border-l-2 border-slate-100 pl-6 ml-3 space-y-6 py-2">
                       {stages.map((stage, index) => (
                         <div key={index} className="relative flex items-start gap-4">
@@ -246,8 +257,11 @@ export function BatchTracking() {
                   </div>
 
                   {/* Actions Panel */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
-                    <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Transition Actions</h3>
+                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/80 p-8 space-y-6">
+                    <h3 className="text-lg font-extrabold text-slate-900 border-b border-slate-100 pb-4 flex items-center gap-2">
+                      <Play className="w-5 h-5 text-blue-500" />
+                      Transition Controls
+                    </h3>
                     
                     <div className="space-y-4">
                       {/* Station Selection */}
@@ -259,7 +273,7 @@ export function BatchTracking() {
                           disabled={actionLoading || selectedBatch.status === "completed"}
                           value={selectedBatch.location}
                           onChange={(e) => handleLocationChange(e.target.value)}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold text-slate-800"
+                          className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold text-slate-800 transition-all hover:bg-white"
                         >
                           {stations.map(station => (
                             <option key={station} value={station}>{station}</option>
@@ -273,7 +287,7 @@ export function BatchTracking() {
                           <button
                             disabled={actionLoading}
                             onClick={() => handleStatusChange("in_progress")}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-bold transition-all text-sm shadow-[0_4px_14px_0_rgb(0,118,255,0.39)] hover:shadow-[0_6px_20px_rgba(0,118,255,0.23)] hover:-translate-y-0.5"
                           >
                             <Play className="w-4 h-4" />
                             Resume Batch
@@ -284,7 +298,7 @@ export function BatchTracking() {
                           <button
                             disabled={actionLoading}
                             onClick={() => handleStatusChange("quality_hold")}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl font-bold transition-all text-sm shadow-[0_4px_14px_0_rgb(245,158,11,0.39)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.23)] hover:-translate-y-0.5"
                           >
                             <Pause className="w-4 h-4" />
                             Place On Quality Hold
@@ -295,7 +309,7 @@ export function BatchTracking() {
                           <button
                             disabled={actionLoading}
                             onClick={() => handleStatusChange("completed")}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all text-sm"
+                            className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl font-bold transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             Complete Batch
