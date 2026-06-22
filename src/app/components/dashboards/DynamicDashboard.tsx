@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Activity, AlertTriangle, BarChart3, Bell, CheckCircle2, ClipboardCheck, Package, PlayCircle, ShoppingCart, TrendingUp, Database, LayoutDashboard } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Bell, CheckCircle2, ClipboardCheck, Package, PlayCircle, ShoppingCart, TrendingUp, Database, LayoutDashboard, CheckSquare, Calendar, Award } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Layout } from "../Layout";
 import { SystemAnnouncement } from "../common/SystemAnnouncement";
