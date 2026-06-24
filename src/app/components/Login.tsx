@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Footprints, AlertCircle, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Footprints, AlertCircle, ArrowRight, User, Lock, Shield, Factory, CheckCircle2, Package, BarChart3 } from "lucide-react";
 import { authApi, dashboardPaths, storeAuthSession } from "../services/authApi";
 
 export function Login() {
@@ -54,120 +54,165 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex w-1/2 relative bg-gradient-to-br from-slate-900 to-slate-800 items-center justify-center overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 -left-20 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+    <div className="min-h-screen flex">
+      {/* Left Sidebar - Factory Image & Branding */}
+      <div className="hidden lg:flex w-1/2 bg-slate-900 relative overflow-hidden flex-col justify-between">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
+          <img 
+            src="/shoe_factory_blue_tint.png" 
+            alt="Factory" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/10 to-slate-900/90" />
+        </div>
 
-        <div className="relative max-w-md px-10 text-center animate-in fade-in slide-in-from-left-8 duration-700">
-          <Link to="/" className="inline-flex items-center gap-2 mb-10">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center">
-              <Footprints className="w-6 h-6 text-slate-900" />
-            </div>
-            <span className="text-2xl font-semibold text-white tracking-tight">
-              JANIDA <span className="text-amber-400">SHOE</span>
-            </span>
-          </Link>
-          <h2 className="text-3xl font-bold text-white tracking-tight">
-            Welcome back to the factory floor
-          </h2>
-          <p className="mt-4 text-slate-300 leading-relaxed">
-            Sign in to manage production, inventory, quality, and your team —
-            all in one smart platform.
-          </p>
+        {/* Top Logo */}
+        <div className="relative z-10 p-12">
+          <div className="flex flex-col items-center max-w-fit">
+             <Footprints className="w-12 h-12 text-white mb-2" />
+             <span className="text-2xl font-bold text-white tracking-wider uppercase">JIANIDA</span>
+             <span className="text-xs tracking-widest text-slate-300 uppercase mt-1">SHOE LTD</span>
+          </div>
+        </div>
+
+        {/* Bottom Content */}
+        <div className="relative z-10 p-12 space-y-10">
+          <div>
+            <h2 className="text-3xl font-light text-white leading-snug">
+              Smart Solutions<br/>
+              <span className="font-semibold">for Smart Manufacturing</span>
+            </h2>
+          </div>
+          
+          {/* Icons Grid */}
+          <div className="grid grid-cols-4 gap-6 pt-6 border-t border-slate-700/50">
+             <div className="flex flex-col items-center gap-2">
+               <div className="p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+                 <Factory className="w-6 h-6 text-slate-300" />
+               </div>
+               <span className="text-xs text-slate-400 font-medium">Production</span>
+             </div>
+             <div className="flex flex-col items-center gap-2">
+               <div className="p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+                 <CheckCircle2 className="w-6 h-6 text-slate-300" />
+               </div>
+               <span className="text-xs text-slate-400 font-medium">Quality</span>
+             </div>
+             <div className="flex flex-col items-center gap-2">
+               <div className="p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+                 <Package className="w-6 h-6 text-slate-300" />
+               </div>
+               <span className="text-xs text-slate-400 font-medium">Inventory</span>
+             </div>
+             <div className="flex flex-col items-center gap-2">
+               <div className="p-3 rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-sm">
+                 <BarChart3 className="w-6 h-6 text-slate-300" />
+               </div>
+               <span className="text-xs text-slate-400 font-medium">Reports</span>
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* Right form panel */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-slate-50">
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-6 duration-700">
-          <Link to="/" className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
-              <Footprints className="w-5 h-5 text-amber-400" />
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-24 bg-white">
+        <div className="w-full max-w-md space-y-8">
+          
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-2">
+              <Lock className="w-7 h-7 text-blue-600" />
             </div>
-            <span className="text-xl font-semibold tracking-tight text-slate-900">
-              JANIDA <span className="text-amber-500">SHOE</span>
-            </span>
-          </Link>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 sm:p-10">
-            <h1 className="text-2xl font-bold text-slate-900">Sign In</h1>
-            <p className="text-slate-500 text-sm mt-1 mb-8">
-              Enter your credentials to access your dashboard.
+            <h1 className="text-3xl font-bold text-slate-900">Welcome Back!</h1>
+            <p className="text-slate-500 max-w-sm">
+              Sign in to your Smart Shoe Factory Management System
             </p>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-red-800 text-sm">{error}</p>
-                </div>
-              )}
-
-            {mfaRequired && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Authenticator Code
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={formData.mfaCode}
-                  onChange={(e) => setFormData({ ...formData, mfaCode: e.target.value })}
-                  placeholder="Enter 6-digit code"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                />
+          <form onSubmit={handleSubmit} className="space-y-6 mt-10">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <p className="text-red-800 text-sm">{error}</p>
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address or Username
-              </label>
-              <input
-                type="text"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="your.email@company.com"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-              />
+            {mfaRequired && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Authenticator Code</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Shield className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={formData.mfaCode}
+                    onChange={(e) => setFormData({ ...formData, mfaCode: e.target.value })}
+                    placeholder="Enter 6-digit code"
+                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Username</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Enter your username"
+                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 text-slate-900"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700">Password</label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-slate-400" />
+                </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all pr-12"
+                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-slate-400 text-slate-900"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-2 focus:ring-amber-400 cursor-pointer"
-                />
-                <span className="text-sm text-slate-600">Remember me</span>
+            <div className="flex items-center justify-between pt-2">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="peer w-5 h-5 appearance-none rounded border-2 border-slate-200 checked:bg-blue-600 checked:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all cursor-pointer"
+                  />
+                  <CheckCircle2 className="absolute inset-0 w-5 h-5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3px] p-[2px]" />
+                </div>
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Remember me</span>
               </label>
               <Link
                 to="/password-recovery"
-                className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Forgot Password?
               </Link>
@@ -176,33 +221,40 @@ export function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-800 transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-amber-500/20 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? "Signing In..." : "Sign In"}
-              {!isLoading && (
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-              )}
+              {isLoading ? "Logging in..." : "Login"}
+            </button>
+            
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-4 bg-white text-sm text-slate-500 font-medium">or</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 border border-slate-200 rounded-xl shadow-sm text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <Shield className="w-4 h-4 text-blue-600" />
+              Login as Admin
             </button>
 
-            <div className="text-center pt-2">
-              <p className="text-slate-600 text-sm">
+            <div className="text-center pt-4">
+              <p className="text-sm text-slate-600">
                 Don't have an account?{" "}
                 <Link
                   to="/register"
-                  className="text-amber-600 hover:text-amber-700 font-medium transition-colors"
+                  className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
-                  Register Now
+                  Register here
                 </Link>
               </p>
             </div>
           </form>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-slate-400 text-xs">
-              Secure enterprise authentication · Protected by end-to-end encryption
-            </p>
-          </div>
         </div>
       </div>
     </div>

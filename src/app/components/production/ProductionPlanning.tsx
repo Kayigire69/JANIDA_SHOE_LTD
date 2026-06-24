@@ -1,13 +1,86 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "../Layout";
 import {
   Package, Users, Settings, Plus, AlertCircle, Download,
-  CheckCircle2, Loader2, Cpu, X, Trash2, UserPlus, Save, RefreshCw, Eye, PlayCircle, Pause
+  CheckCircle2, Loader2, Cpu, X, Trash2, UserPlus, Save, RefreshCw, Eye, PlayCircle, Pause, ChevronDown, Check
 } from "lucide-react";
 import { productionApi, PlanningData, OrdersData } from "../../services/productionApi";
 import { toast } from "sonner";
 
-type ModalType = "create-plan" | "add-machine" | "add-worker" | "manage-machines" | "manage-workers" | null;
+type ModalType = "create-plan" | null;
+
+// Custom MultiSelectDropdown Component
+interface MultiSelectDropdownProps {
+  options: Array<{ label: string; value: string }>;
+  selectedValues: string[];
+  onToggle: (value: string) => void;
+  placeholder: string;
+}
+
+function MultiSelectDropdown({ options, selectedValues, onToggle, placeholder }: MultiSelectDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedCount = selectedValues.length;
+  const selectedLabels = options
+    .filter(opt => selectedValues.includes(opt.value))
+    .map(opt => opt.label);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm text-left flex items-center justify-between hover:border-slate-300"
+      >
+        <span className={selectedCount === 0 ? "text-slate-400" : "text-slate-700"}>
+          {selectedCount === 0 ? placeholder : `${selectedCount} worker${selectedCount === 1 ? '' : 's'} selected`}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-lg max-h-[240px] overflow-y-auto">
+          {options.length === 0 ? (
+            <div className="p-4 text-sm text-slate-500 text-center">No workers available</div>
+          ) : (
+            options.map((option, idx) => {
+              const isSelected = selectedValues.includes(option.value);
+              return (
+                <button
+                  key={`${option.value}-${idx}`}
+                  type="button"
+                  onClick={() => onToggle(option.value)}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-slate-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0"
+                >
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                    isSelected ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'
+                  }`}>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                  <span className={isSelected ? 'text-slate-900 font-medium' : 'text-slate-700'}>
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ProductionPlanning() {
   const [loading, setLoading] = useState(true);
@@ -35,14 +108,8 @@ export function ProductionPlanning() {
     Array<{ name: string; required: number; available: number; unit: string }>
   >([]);
 
-  // Machine form
-  const [machineForm, setMachineForm] = useState({ code: "", name: "", status: "active" });
-
-  // Worker form
-  const [workerForm, setWorkerForm] = useState({
-    workerId: "", name: "", role: "Production Operator",
-    department: "Production", email: "", phone: ""
-  });
+  const [machineForm] = useState({ code: "", name: "", status: "active" });
+  const [workerForm] = useState({ workerId: "", name: "", role: "Production Operator", department: "Production", email: "", phone: "" });
 
   const loadPlanningData = async () => {
     try {
@@ -78,7 +145,10 @@ export function ProductionPlanning() {
     try {
       const res = await productionApi.listProductionWorkers();
       setAllWorkers(res.workers || []);
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      console.error('Failed to load workers:', err);
+      setAllWorkers([]);
+    }
   };
 
   useEffect(() => {
@@ -272,7 +342,7 @@ export function ProductionPlanning() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() => setActiveModal("create-plan")}
+            onClick={() => { setActiveModal("create-plan"); loadAllWorkers(); loadPlanningData(); }}
               className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all"
             >
               <Plus className="w-4 h-4" />
@@ -407,6 +477,7 @@ export function ProductionPlanning() {
                           <label className="block text-sm font-medium text-slate-700 mb-2">Deadline <span className="text-red-500">*</span></label>
                           <input
                             type="date"
+                            min={new Date().toISOString().split('T')[0]}
                             value={formData.deadline}
                             onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                             className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
@@ -423,22 +494,13 @@ export function ProductionPlanning() {
                       <div className="space-y-6">
                         {/* Machine selector */}
                         <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <label className="block text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                              <Cpu className="w-4 h-4 text-blue-500" /> Assign Machine <span className="text-red-500">*</span>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => { setActiveModal("manage-machines"); loadAllMachines(); }}
-                              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors bg-blue-50 px-2.5 py-1 rounded-md"
-                            >
-                              <Settings className="w-3.5 h-3.5" /> Manage Machines
-                            </button>
-                          </div>
+                          <label className="block text-sm font-medium text-slate-700 mb-3 flex items-center gap-1.5">
+                            <Cpu className="w-4 h-4 text-blue-500" /> Assign Machine <span className="text-red-500">*</span>
+                          </label>
                           {data?.machines.length === 0 ? (
                             <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
                               <AlertCircle className="w-4 h-4" />
-                              No machines available. Add a machine first.
+                              No machines available. Add machines from the <strong>Workforce</strong> sidebar section.
                             </div>
                           ) : (
                             <select
@@ -458,52 +520,24 @@ export function ProductionPlanning() {
 
                         {/* Worker selector */}
                         <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <label className="block text-sm font-medium text-slate-700 flex items-center gap-1.5">
-                              <Users className="w-4 h-4 text-purple-500" /> Assign Workers <span className="text-red-500">*</span>
-                              {formData.workerIds.length > 0 && (
-                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                                  {formData.workerIds.length} selected
-                                </span>
-                              )}
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => { setActiveModal("manage-workers"); loadAllWorkers(); }}
-                              className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium transition-colors bg-purple-50 px-2.5 py-1 rounded-md"
-                            >
-                              <Settings className="w-3.5 h-3.5" /> Manage Workers
-                            </button>
-                          </div>
-                          {data?.workers.length === 0 ? (
+                          <label className="block text-sm font-medium text-slate-700 mb-3 flex items-center gap-1.5">
+                            <Users className="w-4 h-4 text-purple-500" /> Assign Workers <span className="text-red-500">*</span>
+                          </label>
+                          {allWorkers.length === 0 ? (
                             <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 flex items-center gap-2">
                               <AlertCircle className="w-4 h-4" />
-                              No active workers available. Add workers first.
+                              No workers available. Go to <strong className="ml-1">Workforce</strong> in the sidebar to add workers first.
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                              {data?.workers.map((worker) => (
-                                <label
-                                  key={worker.id}
-                                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all ${
-                                    formData.workerIds.includes(worker.id)
-                                      ? "bg-blue-50/50 border-blue-500 shadow-sm"
-                                      : "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.workerIds.includes(worker.id)}
-                                    onChange={() => handleWorkerToggle(worker.id)}
-                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all"
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-slate-900 font-medium truncate">{worker.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{worker.role}</p>
-                                  </div>
-                                </label>
-                              ))}
-                            </div>
+                            <MultiSelectDropdown
+                              options={allWorkers.map((worker, idx) => ({
+                                label: `${worker.name} - ${worker.role || 'Worker'}`,
+                                value: String(worker.id || worker.worker_id || idx),
+                              }))}
+                              selectedValues={formData.workerIds}
+                              onToggle={handleWorkerToggle}
+                              placeholder="Select workers"
+                            />
                           )}
                         </div>
                       </div>
@@ -604,243 +638,6 @@ export function ProductionPlanning() {
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Save & Create Plan
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Manage Machines Modal */}
-          {activeModal === "manage-machines" && (
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Cpu className="w-6 h-6 text-blue-600" /> Manage Production Machines
-                </h2>
-                <button onClick={() => setActiveModal("create-plan")} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-8">
-                {/* Add machine inline form */}
-                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2"><Plus className="w-4 h-4 text-blue-600" /> Add New Machine</h3>
-                  <form onSubmit={handleAddMachine} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
-                    <div className="sm:col-span-3">
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Code</label>
-                      <input
-                        required value={machineForm.code}
-                        onChange={(e) => setMachineForm({ ...machineForm, code: e.target.value })}
-                        placeholder="e.g. M-001"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
-                      />
-                    </div>
-                    <div className="sm:col-span-4">
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Machine Name</label>
-                      <input
-                        required value={machineForm.name}
-                        onChange={(e) => setMachineForm({ ...machineForm, name: e.target.value })}
-                        placeholder="e.g. Cut Master 2000"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
-                      />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Status</label>
-                      <select
-                        value={machineForm.status}
-                        onChange={(e) => setMachineForm({ ...machineForm, status: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all"
-                      >
-                        <option value="active">Active</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <button
-                        type="submit" disabled={managingLoading}
-                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60 transition-colors"
-                      >
-                        {managingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                        Add
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Machine list */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-slate-900">Registered Machines ({allMachines.length})</h3>
-                    <button onClick={loadAllMachines} className="text-xs text-slate-500 hover:text-blue-600 font-medium flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md transition-colors"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
-                  </div>
-                  {allMachines.length === 0 ? (
-                    <div className="text-center bg-slate-50 rounded-xl border border-slate-200 border-dashed py-12">
-                      <Cpu className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                      <p className="text-slate-500 text-sm font-medium">No machines registered yet.</p>
-                      <p className="text-slate-400 text-xs mt-1">Add your first machine using the form above.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {allMachines.map((m) => (
-                        <div key={m.id} className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Cpu className="w-5 h-5" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-slate-900 truncate">{m.code}</p>
-                                <p className="text-xs text-slate-500 truncate">{m.name}</p>
-                              </div>
-                            </div>
-                            {statusBadge(m.status)}
-                          </div>
-                          <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-100">
-                            <button
-                              onClick={() => handleToggleMachineStatus(m.id, m.status)}
-                              className="flex-1 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-md font-medium border border-slate-200 transition-colors"
-                            >
-                              {m.status === "active" ? "Set Maintenance" : "Set Active"}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMachine(m.id)}
-                              className="p-1.5 bg-red-50 hover:bg-red-100 border border-red-100 rounded-md transition-colors"
-                              title="Delete Machine"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="p-5 border-t border-slate-100 bg-slate-50">
-                <button onClick={() => setActiveModal("create-plan")} className="w-full py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors">
-                  Back to Planning
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Manage Workers Modal */}
-          {activeModal === "manage-workers" && (
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Users className="w-6 h-6 text-purple-600" /> Manage Production Workers
-                </h2>
-                <button onClick={() => setActiveModal("create-plan")} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-8">
-                {/* Add worker form */}
-                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2"><UserPlus className="w-4 h-4 text-purple-600" /> Register New Worker</h3>
-                  <form onSubmit={handleAddWorker} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Worker ID *</label>
-                      <input
-                        required value={workerForm.workerId}
-                        onChange={(e) => setWorkerForm({ ...workerForm, workerId: e.target.value })}
-                        placeholder="e.g. EMP-010"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Full Name *</label>
-                      <input
-                        required value={workerForm.name}
-                        onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })}
-                        placeholder="e.g. John Doe"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Email *</label>
-                      <input
-                        required type="email" value={workerForm.email}
-                        onChange={(e) => setWorkerForm({ ...workerForm, email: e.target.value })}
-                        placeholder="worker@company.com"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Role</label>
-                      <select
-                        value={workerForm.role}
-                        onChange={(e) => setWorkerForm({ ...workerForm, role: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
-                      >
-                        <option>Production Operator</option>
-                        <option>Production Manager</option>
-                        <option>Quality Inspector</option>
-                        <option>Machine Operator</option>
-                        <option>Maintenance Technician</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Department</label>
-                      <select
-                        value={workerForm.department}
-                        onChange={(e) => setWorkerForm({ ...workerForm, department: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:bg-white outline-none transition-all"
-                      >
-                        <option>Production</option>
-                        <option>Quality Assurance</option>
-                        <option>Inventory &amp; Logistics</option>
-                      </select>
-                    </div>
-                    <div className="flex items-end">
-                      <button
-                        type="submit" disabled={managingLoading}
-                        className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 disabled:opacity-60 transition-colors"
-                      >
-                        {managingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Register Worker
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Worker list */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-slate-900">Production Workforce ({allWorkers.length})</h3>
-                    <button onClick={loadAllWorkers} className="text-xs text-slate-500 hover:text-purple-600 font-medium flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md transition-colors"><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
-                  </div>
-                  {allWorkers.length === 0 ? (
-                    <div className="text-center bg-slate-50 rounded-xl border border-slate-200 border-dashed py-12">
-                      <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                      <p className="text-slate-500 text-sm font-medium">No workers registered yet.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {allWorkers.map((w) => (
-                        <div key={w.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 border border-purple-200">
-                              <span className="text-sm font-bold text-purple-700">{w.name.charAt(0)}</span>
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-slate-900 truncate">{w.name}</p>
-                              <p className="text-xs text-slate-500 truncate">{w.worker_id} • {w.role}</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteWorker(w.id)}
-                            className="p-2 bg-slate-50 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors flex-shrink-0"
-                            title="Remove Worker"
-                          >
-                            <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-500 transition-colors" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="p-5 border-t border-slate-100 bg-slate-50">
-                <button onClick={() => setActiveModal("create-plan")} className="w-full py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition-colors">
-                  Back to Planning
                 </button>
               </div>
             </div>

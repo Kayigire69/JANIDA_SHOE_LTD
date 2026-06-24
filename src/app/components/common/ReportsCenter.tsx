@@ -19,6 +19,7 @@ import { productionApi } from "../../services/productionApi";
 import { inventoryApi } from "../../services/inventoryApi";
 import { qualityApi } from "../../services/qualityApi";
 import { workforceApi } from "../../services/workforceApi";
+import { salesApi } from "../../services/salesApi";
 
 
 
@@ -61,10 +62,11 @@ export function ReportsCenter() {
           columns = ["Order ID", "Product", "Quantity", "Status"];
           rows = data.map((o: any) => [o.id, o.product || "-", o.quantity?.toString() || "-", o.status]);
         } else if (reportType === "inventory") {
-          const data = await inventoryApi.getRawMaterials().then(res => res.materials).catch(() => []);
-          if (data.length === 0) throw new Error("No report data yet");
+          const data = await inventoryApi.getRawMaterials().catch(() => []);
+          const actualData = Array.isArray(data) ? data : (data.materials || []);
+          if (actualData.length === 0) throw new Error("No report data yet");
           columns = ["Material ID", "Name", "Quantity", "Unit"];
-          rows = data.map((m: any) => [m.id, m.name, m.quantity?.toString() || "0", m.unit || "-"]);
+          rows = actualData.map((m: any) => [m.idCode || m.id, m.name, m.quantity?.toString() || "0", m.unit || "-"]);
         } else if (reportType === "quality") {
           const data = await qualityApi.getInspections().then(res => res.inspections).catch(() => []);
           if (data.length === 0) throw new Error("No report data yet");
@@ -80,6 +82,29 @@ export function ReportsCenter() {
           if (data.length === 0) throw new Error("No report data yet");
           columns = ["Supplier", "Contact", "Rating", "Status"];
           rows = data.map((s: any) => [s.name, s.contactPerson || "-", s.rating?.toString() || "-", s.status]);
+        } else if (reportType === "sales") {
+          const data = await salesApi.getOrders().catch(() => []);
+          
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          
+          const filtered = Array.isArray(data) ? data.filter((o: any) => {
+             const d = new Date(o.createdAt || o.created_at || new Date());
+             return d >= start && d <= end;
+          }) : [];
+          
+          if (filtered.length === 0) throw new Error("No sales data found for the selected dates");
+          
+          columns = ["Order #", "Customer", "Date", "Status", "Total Amount"];
+          rows = filtered.map((o: any) => [
+             o.orderNumber || o.id, 
+             o.customerName || o.customer || "Walk-in", 
+             new Date(o.createdAt || o.created_at || new Date()).toLocaleDateString(), 
+             o.status || "N/A", 
+             `${o.totalAmount || o.total || 0} RWF`
+          ]);
         } else {
            throw new Error("No report data yet");
         }

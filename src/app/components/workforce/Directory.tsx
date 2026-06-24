@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Layout } from "../Layout";
-import { Users, Search, Mail, Phone, Building2, UserPlus, X, Loader2, Briefcase, CalendarDays, BadgeDollarSign, AlertCircle } from "lucide-react";
+import { Users, Search, Mail, Phone, Building2, UserPlus, X, Loader2, Briefcase, CalendarDays, BadgeDollarSign, AlertCircle, Edit } from "lucide-react";
 import { workforceApi } from "../../services/workforceApi";
+import { productionApi } from "../../services/productionApi";
+import { toast } from "sonner";
 
 const shifts = ["all", "morning", "afternoon", "night", "flex"];
 const statuses = ["all", "active", "inactive", "on_leave", "terminated"];
@@ -15,6 +17,7 @@ export function WorkforceDirectory() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
 
   const [form, setForm] = useState({
@@ -42,8 +45,34 @@ export function WorkforceDirectory() {
       if (filterDepartment !== "all") params.department = filterDepartment;
       if (filterStatus !== "all") params.status = filterStatus;
       if (filterShift !== "all") params.shift = filterShift;
-      const data = await workforceApi.listEmployees(params);
-      setEmployees(data.employees || []);
+      
+      const [workforceData, productionData] = await Promise.all([
+        workforceApi.listEmployees(params).catch(() => ({ employees: [] })),
+        productionApi.listProductionWorkers().catch(() => ({ workers: [] }))
+      ]);
+      
+      // Merge workforce employees with production workers
+      const workforceEmployees = (workforceData.employees || []).map((emp: any) => ({
+        ...emp,
+        source: 'workforce'
+      }));
+      
+      const productionWorkers = (productionData.workers || []).map((worker: any) => ({
+        id: worker.id || worker.worker_id,
+        fullName: worker.name,
+        employeeCode: worker.worker_id || worker.id,
+        email: worker.email || '-',
+        phone: worker.phone || '-',
+        role: worker.role || 'Operator',
+        department: worker.department || 'Production',
+        shift: worker.shift || 'morning',
+        status: 'active',
+        hourlyRate: worker.hourly_rate || 0,
+        hireDate: worker.hire_date || null,
+        source: 'production'
+      }));
+      
+      setEmployees([...workforceEmployees, ...productionWorkers]);
     } catch (err: any) {
       setError(err?.message || "Failed to load employees");
     } finally {
@@ -91,26 +120,65 @@ export function WorkforceDirectory() {
     return Object.keys(errs).length === 0;
   };
 
+  const openEditModal = (employee: any) => {
+    setEditingEmployee(employee);
+    setForm({
+      employeeCode: employee.employeeCode || "",
+      fullName: employee.fullName || "",
+      email: employee.email || "",
+      phone: employee.phone || "",
+      role: employee.role || "",
+      department: employee.department || "",
+      shift: employee.shift || "morning",
+      skills: employee.skills?.join(", ") || "",
+      hourlyRate: employee.hourlyRate?.toString() || "",
+      hireDate: employee.hireDate || "",
+      emergencyContact: employee.emergencyContact || "",
+    });
+    setShowModal(true);
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
     setError("");
     try {
-      await workforceApi.createEmployee({
-        employeeCode: form.employeeCode.trim(),
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim() || undefined,
-        role: form.role.trim(),
-        department: form.department.trim(),
-        shift: form.shift,
-        skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
-        hourlyRate: Number(form.hourlyRate) || 0,
-        hireDate: form.hireDate || undefined,
-        emergencyContact: form.emergencyContact.trim() || undefined,
-      });
+      if (editingEmployee) {
+        // Update existing employee
+        await workforceApi.updateEmployee(editingEmployee.id, {
+          employeeCode: form.employeeCode.trim(),
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          role: form.role.trim(),
+          department: form.department.trim(),
+          shift: form.shift,
+          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          hourlyRate: Number(form.hourlyRate) || 0,
+          hireDate: form.hireDate || undefined,
+          emergencyContact: form.emergencyContact.trim() || undefined,
+        });
+        toast.success("Employee updated successfully");
+      } else {
+        // Create new employee
+        await workforceApi.createEmployee({
+          employeeCode: form.employeeCode.trim(),
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          role: form.role.trim(),
+          department: form.department.trim(),
+          shift: form.shift,
+          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          hourlyRate: Number(form.hourlyRate) || 0,
+          hireDate: form.hireDate || undefined,
+          emergencyContact: form.emergencyContact.trim() || undefined,
+        });
+        toast.success("Employee created successfully");
+      }
       setShowModal(false);
+      setEditingEmployee(null);
       setForm({
         employeeCode: "",
         fullName: "",
@@ -126,7 +194,8 @@ export function WorkforceDirectory() {
       });
       fetchEmployees();
     } catch (err: any) {
-      setError(err?.message || "Failed to create employee");
+      setError(err?.message || editingEmployee ? "Failed to update employee" : "Failed to create employee");
+      toast.error(err?.message || editingEmployee ? "Failed to update employee" : "Failed to create employee");
     } finally {
       setSubmitting(false);
     }
@@ -151,7 +220,7 @@ export function WorkforceDirectory() {
             <p className="text-slate-600 text-sm mt-1">Create and manage employees</p>
           </div>
           <button
-            onClick={() => { setShowModal(true); setError(""); }}
+            onClick={() => { setEditingEmployee(null); setShowModal(true); setError(""); }}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
           >
             <UserPlus className="w-4 h-4" />
@@ -266,55 +335,71 @@ export function WorkforceDirectory() {
           )}
 
           {!loading && employees.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {employees.map((emp) => (
-                <div key={emp.id} className="border border-slate-200 rounded-lg p-4 bg-white hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {emp.fullName?.split(" ").map((n: string) => n[0]).join("")}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-900">{emp.fullName}</h4>
-                        <p className="text-sm text-slate-600">{emp.employeeCode}</p>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusBadge(emp.status)}`}>
-                      {emp.status?.replace("_", " ")}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
-                      <Briefcase className="w-4 h-4 text-slate-400" />
-                      <span className="font-medium">{emp.role}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Building2 className="w-4 h-4 text-slate-400" />
-                      <span>{emp.department}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <CalendarDays className="w-4 h-4 text-slate-400" />
-                      <span className="capitalize">{emp.shift} shift</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Mail className="w-4 h-4 text-slate-400" />
-                      <span>{emp.email}</span>
-                    </div>
-                    {emp.phone && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Phone className="w-4 h-4 text-slate-400" />
-                        <span>{emp.phone}</span>
-                      </div>
-                    )}
-                    {emp.hourlyRate > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <BadgeDollarSign className="w-4 h-4 text-slate-400" />
-                        <span>${emp.hourlyRate}/hr</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3">Employee</th>
+                    <th className="px-4 py-3">Code</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Department</th>
+                    <th className="px-4 py-3">Shift</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Hourly Rate</th>
+                    <th className="px-4 py-3">Source</th>
+                    <th className="px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((emp) => (
+                    <tr key={emp.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            {emp.fullName?.split(" ").map((n: string) => n[0]).join("")}
+                          </div>
+                          <span className="font-medium text-slate-900">{emp.fullName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">{emp.employeeCode}</td>
+                      <td className="px-4 py-4">{emp.role}</td>
+                      <td className="px-4 py-4">{emp.department}</td>
+                      <td className="px-4 py-4 capitalize">{emp.shift}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusBadge(emp.status)}`}>
+                          {emp.status?.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">{emp.email}</td>
+                      <td className="px-4 py-4">{emp.phone || '-'}</td>
+                      <td className="px-4 py-4">{emp.hourlyRate > 0 ? `RWF ${emp.hourlyRate}/hr` : '-'}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          emp.source === 'production' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {emp.source || 'workforce'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {emp.source === 'workforce' && (
+                          <button
+                            onClick={() => openEditModal(emp)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        )}
+                        {emp.source === 'production' && (
+                          <span className="text-xs text-slate-400 italic">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -324,8 +409,14 @@ export function WorkforceDirectory() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Add Employee</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+              <h2 className="text-lg font-semibold text-slate-900">{editingEmployee ? "Edit Employee" : "Add Employee"}</h2>
+              <button 
+                onClick={() => { 
+                  setShowModal(false); 
+                  setEditingEmployee(null); 
+                }} 
+                className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -353,7 +444,16 @@ export function WorkforceDirectory() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Department</label>
-                  <input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={`w-full px-3 py-2 bg-slate-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.department ? "border-red-300" : "border-slate-200"}`} placeholder="Production" />
+                  <select 
+                    value={form.department} 
+                    onChange={(e) => setForm({ ...form, department: e.target.value })} 
+                    className={`w-full px-3 py-2 bg-slate-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.department ? "border-red-300" : "border-slate-200"}`}
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Shift</label>
@@ -382,12 +482,19 @@ export function WorkforceDirectory() {
                 <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Stitching, Quality Control, Machine Operation" />
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 text-slate-700 bg-slate-100 rounded-lg font-medium hover:bg-slate-200 transition-colors">
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowModal(false); 
+                    setEditingEmployee(null); 
+                  }} 
+                  className="px-5 py-2.5 text-slate-700 bg-slate-100 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                >
                   Cancel
                 </button>
                 <button type="submit" disabled={submitting} className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 flex items-center gap-2">
                   {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save Employee
+                  {editingEmployee ? "Update Employee" : "Save Employee"}
                 </button>
               </div>
             </form>

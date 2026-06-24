@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { ArrowUpRight, ArrowDownLeft, Plus, Calendar, Search, AlertTriangle, X, BarChart3, ClipboardCheck, TrendingUp } from "lucide-react";
 import { inventoryApi, StockMovement as Movement, RawMaterial, FinishedGood } from "../../services/inventoryApi";
-import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
 import { useSettings } from "../../context/SettingsContext";
 import { getCurrentRole } from "../../services/session";
 import { toast } from "sonner";
@@ -108,49 +107,6 @@ export function StockMovement() {
     }
   };
 
-  const handleExportCSV = () => {
-    const rows = [
-      ["Stock Movement Report"],
-      [""],
-      ["Log ID", "Item", "Type", "Direction", "Quantity", "Reference", "Location", "Date", "Operator"],
-      ...movements.map(m => [
-        m.id.substring(0, 8),
-        m.material,
-        m.unit === "pairs" ? "Finished Good" : "Raw Material",
-        m.type.toUpperCase(),
-        `${m.quantity} ${m.unit}`,
-        m.reference || "-",
-        m.location || "-",
-        m.date,
-        m.operator
-      ])
-    ];
-    exportToCSV("stock_movement_report", rows);
-  };
-
-  const handleExportPDF = async () => {
-    await generateStyledPDF({
-      filename: "stock-movement-report",
-      reportTitle: "Stock Movement Report",
-      sectionTitle: "1. STOCK MOVEMENT IN PERIOD",
-      periodStart: filterDate || "All Time",
-      columns: ["Log ID", "Item", "Type", "Direction", "Quantity", "Reference", "Location", "Date"],
-      rows: movements.map(m => [
-        m.id.substring(0, 8),
-        m.material,
-        m.unit === "pairs" ? "Finished Good" : "Raw Material",
-        m.type.toUpperCase(),
-        `${m.type === "in" ? "+" : "-"}${m.quantity} ${m.unit}`,
-        m.reference || "-",
-        m.location || "-",
-        new Date(m.date).toLocaleDateString()
-      ]),
-      companyName,
-      logoUrl: logoUrl || undefined,
-      apiBaseUrl: API_BASE_URL
-    });
-  };
-
   return (
     <Layout>
       <div className="p-8 space-y-6">
@@ -166,22 +122,6 @@ export function StockMovement() {
             </div>
           </div>
           <div className="relative z-10 flex items-center gap-3">
-            <div className="flex gap-2 print:hidden mr-4">
-              <button 
-                onClick={handleExportPDF}
-                className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              >
-                <ClipboardCheck className="w-4 h-4" />
-                Export PDF
-              </button>
-              <button 
-                onClick={handleExportCSV}
-                className="flex items-center gap-2 px-5 py-3 bg-white/10 text-white rounded-xl text-sm font-bold hover:bg-white/20 border border-white/20 transition-all backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Export Excel
-              </button>
-            </div>
             {canManage && (
               <div className="flex gap-3">
                 <button
@@ -217,7 +157,7 @@ export function StockMovement() {
                 type="text"
                 value={filterMaterial}
                 onChange={(e) => setFilterMaterial(e.target.value)}
-                placeholder="Search by material code or SKU..."
+                placeholder="Search by material code..."
                 className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
               />
             </div>
@@ -336,7 +276,7 @@ export function StockMovement() {
                         : "bg-white border-slate-200 text-slate-700"
                     }`}
                   >
-                    Finished SKU
+                    Finished Good
                   </button>
                 </div>
               </div>
@@ -358,16 +298,16 @@ export function StockMovement() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Select Finished SKU *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Select Finished Good *</label>
                   <select
                     required
                     value={newMovement.finishedGoodId}
                     onChange={(e) => setNewMovement({ ...newMovement, finishedGoodId: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    <option value="">Choose SKU</option>
+                    <option value="">Choose product</option>
                     {finishedGoods.map(fg => (
-                      <option key={fg.id} value={fg.id}>{fg.sku} - {fg.product}</option>
+                      <option key={fg.id} value={fg.id}>{fg.product}</option>
                     ))}
                   </select>
                 </div>

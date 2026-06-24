@@ -65,7 +65,7 @@ export function InvoiceLog() {
     const headers = ["Invoice #", "Order #", "Customer", "Amount Due", "Status", "Due Date", "Created"];
     const rows = filtered.map((inv) => [
       inv.invoiceNumber, inv.orderNumber, inv.customer,
-      `$${inv.amountDue?.toFixed(2)}`, inv.status, inv.dueDate, inv.createdAt
+      `RWF ${inv.amountDue?.toFixed(2)}`, inv.status, inv.dueDate, inv.createdAt
     ]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -99,17 +99,17 @@ export function InvoiceLog() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border-l-4 border-blue-500 shadow-sm p-5">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Invoiced</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">RWF {totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             <p className="text-xs text-slate-400 mt-1">{invoices.length} total invoices</p>
           </div>
           <div className="bg-white rounded-xl border-l-4 border-emerald-500 shadow-sm p-5">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Paid</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">${paidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">RWF {paidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             <p className="text-xs text-slate-400 mt-1">{paidCount} invoices collected</p>
           </div>
           <div className="bg-white rounded-xl border-l-4 border-amber-500 shadow-sm p-5">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Outstanding</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">${unpaidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-amber-600 mt-1">RWF {unpaidAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             <p className="text-xs text-slate-400 mt-1">{unpaidCount} invoices pending</p>
           </div>
           <div className="bg-white rounded-xl border-l-4 border-slate-300 shadow-sm p-5">
@@ -187,8 +187,7 @@ export function InvoiceLog() {
                         <td className="px-4 py-3 font-medium text-slate-900">{inv.customer}</td>
                         <td className="px-4 py-3">
                           <span className="font-bold text-slate-900 flex items-center gap-1">
-                            <DollarSign className="w-3.5 h-3.5 text-slate-400" />
-                            {inv.amountDue?.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            RWF {inv.amountDue?.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </td>
                         <td className="px-4 py-3">

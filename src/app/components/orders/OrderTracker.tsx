@@ -100,7 +100,7 @@ export function OrderTracker() {
     const headers = ["Order #", "Customer", "Status", "Priority", "Total Amount", "Delivery Date", "Invoice", "Tracking"];
     const rows = filtered.map((o) => [
       o.orderNumber, o.customer, o.status, o.priority,
-      `$${o.totalAmount?.toFixed(2)}`, o.deliveryDate,
+      `RWF ${o.totalAmount?.toFixed(2)}`, o.deliveryDate,
       o.invoiceNumber || "—", o.trackingNumber || "—"
     ]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
@@ -253,7 +253,7 @@ export function OrderTracker() {
                           ) : <span className="text-slate-300 text-xs">Not shipped</span>}
                         </td>
                         <td className="px-4 py-3 font-semibold text-slate-900">
-                          ${order.totalAmount?.toFixed(2) || "0.00"}
+                          RWF {order.totalAmount?.toFixed(2) || "0.00"}
                         </td>
                         <td className="px-4 py-3 text-slate-600">{order.deliveryDate}</td>
                         <td className="px-4 py-3">

@@ -12,6 +12,10 @@ import {
   X,
   ArrowRight,
   CheckCircle2,
+  TrendingUp,
+  Zap,
+  BarChart3,
+  Activity,
 } from "lucide-react";
 
 const heroImages = [
@@ -96,10 +100,10 @@ const testimonials = [
 ];
 
 const stats = [
-  { value: "120K+", label: "Pairs Produced Monthly" },
-  { value: "99.2%", label: "Quality Pass Rate" },
-  { value: "35+", label: "Active Staff Accounts" },
-  { value: "24/7", label: "Real-Time Monitoring" },
+  { value: "120K+", label: "Pairs Produced Monthly", icon: TrendingUp, color: "text-amber-400" },
+  { value: "99.2%", label: "Quality Pass Rate",      icon: ShieldCheck,  color: "text-emerald-400" },
+  { value: "35+",   label: "Active Staff Accounts",  icon: Zap,          color: "text-blue-400" },
+  { value: "24/7",  label: "Real-Time Monitoring",   icon: Activity,     color: "text-violet-400" },
 ];
 
 export function Home() {
@@ -129,100 +133,148 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden">
-      <style>
-        {`
-          @keyframes continuous-slide {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-        `}
-      </style>
+      <style>{`
+        @keyframes continuous-slide {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes float-up {
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-12px); }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .shimmer-text {
+          background: linear-gradient(90deg, #fbbf24, #f59e0b, #fde68a, #f59e0b, #fbbf24);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer 4s linear infinite;
+        }
+        .card-float { animation: float-up 4s ease-in-out infinite; }
+        .card-float-delay { animation: float-up 4s ease-in-out infinite 1.5s; }
+        .nav-link-hover::after {
+          content: '';
+          position: absolute;
+          left: 0; bottom: -4px;
+          height: 2px; width: 0;
+          background: linear-gradient(90deg, #f59e0b, #fbbf24);
+          border-radius: 9999px;
+          transition: width 0.3s ease;
+        }
+        .nav-link-hover:hover::after { width: 100%; }
+      `}</style>
 
-      {/* Navbar */}
+      {/* ═══════════════════════════════ NAVBAR ═══════════════════════════════ */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "bg-white/80 backdrop-blur-md shadow-md py-3"
-            : "bg-transparent py-5"
+            ? "py-2"
+            : "py-4"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <a href="#home" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center transition-transform duration-300 group-hover:rotate-6 group-hover:scale-105">
-              <Footprints className="w-5 h-5 text-amber-400" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight">
-              JANIDA <span className="text-amber-500">SHOE</span>
-            </span>
-          </a>
+        {/* Glass pill container */}
+        <div className={`max-w-7xl mx-auto px-4 transition-all duration-500 ${
+          scrolled ? "" : "px-6"
+        }`}>
+          <div className={`flex items-center justify-between gap-4 rounded-2xl transition-all duration-500 ${
+            scrolled
+              ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-900/[0.08] border border-slate-200/60 px-5 py-3"
+              : "bg-slate-900/40 backdrop-blur-md border border-white/10 px-5 py-3.5"
+          }`}>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="relative text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200 after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-amber-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+            {/* Logo */}
+            <a href="#home" className="flex items-center gap-2.5 group flex-shrink-0">
+              <div className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 ${
+                scrolled ? "bg-slate-900" : "bg-amber-400"
+              }`}>
+                <Footprints className={`w-4.5 h-4.5 transition-colors ${
+                  scrolled ? "text-amber-400" : "text-slate-900"
+                }`} style={{ width: 18, height: 18 }} />
+                {/* Glow ring */}
+                <span className="absolute inset-0 rounded-xl bg-amber-400/30 scale-0 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              </div>
+              <span className={`text-[17px] font-bold tracking-tight transition-colors ${
+                scrolled ? "text-slate-900" : "text-white"
+              }`}>
+                JANIDA<span className="text-amber-400"> SHOE</span>
+              </span>
+            </a>
 
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors duration-200 px-4 py-2"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/register"
-              className="group relative inline-flex items-center gap-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 px-5 py-2.5 rounded-full shadow-lg shadow-slate-900/20 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/20 hover:-translate-y-0.5"
-            >
-              Get Started
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
-          </div>
+            {/* Desktop nav links */}
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className={`relative nav-link-hover px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                    scrolled
+                      ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
 
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden text-slate-800"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile menu */}
-        <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ${
-            menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="px-6 py-4 flex flex-col gap-4 bg-white/95 backdrop-blur-md border-t border-slate-100">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-sm font-medium text-slate-700"
-              >
-                {link.label}
-              </a>
-            ))}
-            <div className="flex flex-col gap-3 pt-2">
+            {/* CTA buttons */}
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               <Link
                 to="/login"
-                className="text-center text-sm font-medium border border-slate-200 rounded-full py-2.5"
+                className={`text-[13px] font-semibold px-4 py-2 rounded-lg transition-all duration-200 ${
+                  scrolled
+                    ? "text-slate-700 hover:bg-slate-100"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
-                className="text-center text-sm font-semibold text-white bg-slate-900 rounded-full py-2.5"
+                className="group relative inline-flex items-center gap-2 text-[13px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-5 py-2.5 rounded-xl shadow-md shadow-amber-500/25 transition-all duration-300 hover:shadow-lg hover:shadow-amber-400/35 hover:-translate-y-0.5"
               >
+                Get Started
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              className={`md:hidden p-2 rounded-lg transition-colors ${
+                scrolled ? "text-slate-700 hover:bg-slate-100" : "text-white hover:bg-white/10"
+              }`}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile dropdown */}
+        <div className={`md:hidden overflow-hidden transition-all duration-300 mt-2 mx-4 ${
+          menuOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+        }`}>
+          <div className="rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/60 shadow-xl px-4 py-4 flex flex-col gap-1">
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="text-[13px] font-semibold text-slate-700 px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+            <div className="flex flex-col gap-2 pt-3 mt-1 border-t border-slate-100">
+              <Link to="/login" className="text-center text-[13px] font-semibold border border-slate-200 rounded-xl py-2.5 text-slate-700 hover:bg-slate-50">
+                Sign In
+              </Link>
+              <Link to="/register" className="text-center text-[13px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-xl py-2.5 transition-colors">
                 Get Started
               </Link>
             </div>
@@ -230,176 +282,209 @@ export function Home() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* ═══════════════════════════════ HERO ═══════════════════════════════ */}
       <section
         id="home"
-        className="relative isolate pt-36 pb-24 px-6 overflow-hidden min-h-[90vh] flex items-center"
+        className="relative isolate pt-32 pb-20 px-6 overflow-hidden min-h-[100vh] flex items-center"
       >
-        {/* Background image continuous carousel */}
-        <div className="absolute inset-0 -z-20 overflow-hidden bg-slate-900">
+        {/* BG image carousel */}
+        <div className="absolute inset-0 -z-20 overflow-hidden bg-slate-950">
           <div
             className="flex h-full will-change-transform"
             style={{
               width: "1000%",
               ...(isManual
-                ? {
-                    transform: `translateX(-${activeImage * 10}%)`,
-                    transition: "transform 0.8s ease-in-out",
-                  }
+                ? { transform: `translateX(-${activeImage * 10}%)`, transition: "transform 0.8s ease-in-out" }
                 : { animation: "continuous-slide 50s linear infinite" }),
             }}
           >
             {duplicatedImages.map((img, i) => (
-              <div
-                key={`${img}-${i}`}
-                className="h-full shrink-0 bg-cover bg-center"
-                style={{ width: "10%", backgroundImage: `url(${img})` }}
-              />
+              <div key={`${img}-${i}`} className="h-full shrink-0 bg-cover bg-center" style={{ width: "10%", backgroundImage: `url(${img})` }} />
             ))}
           </div>
         </div>
 
-        {/* First layer: Diagonal slit gradient for branded depth */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-slate-900/90 via-slate-800/60 to-amber-900/30" />
+        {/* Overlay stack */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-slate-950/95 via-slate-900/80 to-slate-800/70" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(251,191,36,0.12),transparent)]" />
+        <div className="absolute inset-0 -z-10" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, rgba(251,191,36,0.07) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(99,102,241,0.07) 0%, transparent 50%)" }} />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 -z-10 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        {/* Bottom fade */}
+        <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-white via-white/50 to-transparent -z-10" />
 
-        {/* Second layer: Subtle vignette */}
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
+        {/* Ambient glows */}
+        <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-        {/* Third layer: Diagonal faint crosshatch pattern */}
-        <div
-          className="absolute inset-0 -z-10 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, #ffffff 0px, #ffffff 1px, transparent 1px, transparent 10px)",
-          }}
-        />
+        <div className="relative max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center z-10">
 
-        {/* Bottom edge fade to white to blend with next section */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white via-white/60 to-transparent -z-10" />
+          {/* ── Left column ── */}
+          <div className="space-y-8">
+            {/* Eyebrow badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-amber-400/30 bg-amber-400/10 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-amber-300 text-xs font-bold tracking-[0.15em] uppercase">Smart Factory Management</span>
+            </div>
 
-        {/* Decorative glows */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-amber-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/2 -left-32 w-80 h-80 bg-amber-300/10 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+            {/* Headline */}
+            <div>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white">
+                Manufacturing
+              </h1>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight shimmer-text">
+                Smarter, Faster,
+              </h1>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white">
+                and Stronger.
+              </h1>
+            </div>
 
-        <div className="relative max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center z-10">
-          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/15 border border-amber-300/30 text-amber-300 text-xs font-semibold uppercase tracking-wide backdrop-blur-sm">
-              <Factory className="w-3.5 h-3.5" />
-              Smart Factory Management
-            </span>
-            <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-white">
-              Manufacturing
-              <span className="block text-amber-400">Smarter, Faster,</span>
-              and Stronger.
-            </h1>
-            <p className="mt-6 text-lg text-slate-200 max-w-lg leading-relaxed">
-              Janida Shoe Ltd's all-in-one management platform connects
-              production, inventory, quality, and your workforce — giving you
-              total control over every step of the shoemaking process.
+            {/* Description */}
+            <p className="text-[17px] text-slate-300 max-w-md leading-relaxed">
+              Janida Shoe Ltd's all-in-one management platform connects production,
+              inventory, quality, and your workforce — giving you total control over
+              every step of the shoemaking process.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+
+            {/* CTA buttons */}
+            <div className="flex flex-wrap gap-4">
               <Link
                 to="/register"
-                className="group inline-flex items-center gap-2 text-base font-semibold text-slate-900 bg-amber-400 hover:bg-amber-300 px-7 py-3.5 rounded-full shadow-lg shadow-amber-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-amber-400/40 hover:-translate-y-0.5"
+                className="group inline-flex items-center gap-2.5 text-[15px] font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-8 py-4 rounded-2xl shadow-xl shadow-amber-500/30 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-400/40 hover:-translate-y-1"
               >
-                Get Started
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                Get Started Free
+                <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
               <a
                 href="#features"
-                className="inline-flex items-center gap-2 text-base font-semibold text-white border border-white/30 hover:border-white/50 px-7 py-3.5 rounded-full transition-all duration-300 hover:bg-white/10 backdrop-blur-sm"
+                className="inline-flex items-center gap-2 text-[15px] font-semibold text-white/90 border border-white/20 hover:border-white/40 px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-white/[0.07] backdrop-blur-sm"
               >
                 Explore Features
               </a>
             </div>
 
-            {/* Slider Controls - Minimal Dot Indicators */}
-            <div className="mt-12 flex gap-2.5 items-center">
+            {/* Dot indicators */}
+            <div className="flex gap-2 items-center">
               {heroImages.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => handleDotClick(i)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`rounded-full transition-all duration-300 ${
                     activeImage === i
-                      ? "w-7 bg-amber-400"
-                      : "w-2 bg-white/40 hover:bg-white/60"
+                      ? "w-8 h-2 bg-amber-400"
+                      : "w-2 h-2 bg-white/30 hover:bg-white/50"
                   }`}
-                  aria-label={`Go to slide ${i + 1}`}
+                  aria-label={`Slide ${i + 1}`}
                 />
               ))}
             </div>
 
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
-              {stats.map((stat, i) => (
-                <div
-                  key={stat.label}
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-700"
-                  style={{ animationDelay: `${i * 100 + 200}ms` }}
-                >
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
-                  <p className="text-xs text-slate-300 mt-1">{stat.label}</p>
-                </div>
-              ))}
+            {/* Stats strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 pt-4 border-t border-white/10">
+              {stats.map((stat, i) => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={stat.label}
+                    className={`px-4 py-3 ${
+                      i !== 0 ? "border-l border-white/10" : ""
+                    }`}
+                    style={{ animationDelay: `${i * 100 + 200}ms` }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Icon className={`w-3.5 h-3.5 ${stat.color}`} />
+                      <p className="text-[22px] font-black text-white leading-none">{stat.value}</p>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium leading-tight">{stat.label}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="relative animate-in fade-in slide-in-from-bottom-12 duration-1000">
-            <div className="relative rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-1.5 shadow-2xl shadow-slate-900/30 hover:scale-[1.02] transition-transform duration-500">
-              <div className="rounded-[1.3rem] bg-slate-900 p-8 sm:p-10">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center">
-                    <Footprints className="w-6 h-6 text-slate-900" />
+          {/* ── Right column: Dashboard card ── */}
+          <div className="relative lg:flex lg:justify-end">
+            {/* Main card */}
+            <div className="card-float relative w-full max-w-[420px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-slate-950/50">
+              {/* Card header gradient */}
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 pt-6 pb-5">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-sm">Production Overview</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <p className="text-emerald-400 text-xs font-medium">Live Dashboard</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-semibold">
-                      Production Overview
-                    </p>
-                    <p className="text-slate-400 text-sm">Live Dashboard</p>
+                  {/* Window controls */}
+                  <div className="flex gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-red-400/60" />
+                    <span className="w-3 h-3 rounded-full bg-amber-400/60" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400/60" />
                   </div>
                 </div>
+
+                {/* Production bars */}
                 <div className="space-y-4">
                   {[
-                    { label: "Sneakers Line A", value: 84 },
-                    { label: "Boots Line B", value: 62 },
-                    { label: "Sandals Line C", value: 95 },
+                    { label: "Sneakers Line A", value: 84, color: "from-amber-400 to-orange-400" },
+                    { label: "Boots Line B",    value: 62, color: "from-blue-400 to-indigo-400" },
+                    { label: "Sandals Line C",  value: 95, color: "from-emerald-400 to-teal-400" },
                   ].map((line, i) => (
                     <div key={line.label}>
-                      <div className="flex justify-between text-sm text-slate-300 mb-1.5">
+                      <div className="flex justify-between text-xs font-semibold text-slate-300 mb-2">
                         <span>{line.label}</span>
-                        <span>{line.value}%</span>
+                        <span className="text-white">{line.value}%</span>
                       </div>
-                      <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
+                      <div className="h-2 rounded-full bg-slate-700/80 overflow-hidden">
                         <div
-                          className="h-full bg-amber-400 rounded-full transition-all duration-1000 ease-out"
-                          style={{
-                            width: `${line.value}%`,
-                            transitionDelay: `${i * 150 + 300}ms`,
-                          }}
+                          className={`h-full rounded-full bg-gradient-to-r ${line.color} transition-all duration-1000 ease-out shadow-sm`}
+                          style={{ width: `${line.value}%`, transitionDelay: `${i * 150 + 300}ms` }}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-8 pt-6 border-t border-slate-700 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-                    <CheckCircle2 className="w-4 h-4" />
-                    All systems operational
-                  </div>
-                  <span className="text-xs text-slate-400">Kigali, RW</span>
+              </div>
+
+              {/* Card footer */}
+              <div className="bg-slate-900/90 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-t border-white/[0.06]">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  All systems operational
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="text-slate-400 text-xs font-medium">Kigali, RW</span>
                 </div>
               </div>
             </div>
 
-            {/* Floating badge */}
-            <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl p-4 flex items-center gap-3 animate-bounce [animation-duration:3s]">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                <Award className="w-5 h-5 text-amber-500" />
+            {/* Floating badge bottom-left */}
+            <div className="card-float-delay absolute -bottom-4 -left-6 bg-white rounded-2xl shadow-2xl p-3.5 flex items-center gap-3 border border-slate-100">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow">
+                <Award className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  99.2% Quality
-                </p>
-                <p className="text-xs text-slate-500">Pass Rate</p>
+                <p className="text-[13px] font-bold text-slate-900">99.2% Quality</p>
+                <p className="text-[11px] text-slate-500">Pass Rate</p>
+              </div>
+            </div>
+
+            {/* Floating chip top-right */}
+            <div className="absolute -top-4 -right-4 bg-slate-800/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/10 p-3 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-[12px] font-bold text-white">+18.4%</p>
+                <p className="text-[10px] text-slate-500">This month</p>
               </div>
             </div>
           </div>

@@ -65,16 +65,6 @@ export function InspectionHistory() {
   const avgDefectRate = totalInspected > 0 ? (totalFailed / totalInspected) * 100 : 0;
   const certificatesIssued = certificates.length;
 
-  const handleExport = () => {
-    const data = JSON.stringify(filteredInspections, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `inspection-history-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":

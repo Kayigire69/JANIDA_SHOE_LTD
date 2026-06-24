@@ -32,10 +32,10 @@ export const getDashboard = async ({ role, userId }) => {
 
 export const listNotifications = async ({ role, userId }) => {
   const result = await query(
-    `SELECT id, type, title, message, priority, read_at, created_at
+    `SELECT DISTINCT ON (id) id, type, title, message, priority, read_at, created_at, sender_role
      FROM notifications
      WHERE user_id = $1 OR role = $2 OR role IS NULL
-     ORDER BY created_at DESC`,
+     ORDER BY id, created_at DESC`,
     [userId, role]
   )
 
@@ -47,7 +47,8 @@ export const listNotifications = async ({ role, userId }) => {
       message: row.message,
       priority: row.priority,
       read: Boolean(row.read_at),
-      timestamp: row.created_at
+      timestamp: row.created_at,
+      senderRole: row.sender_role
     }))
   }
 }
@@ -60,4 +61,10 @@ export const markNotificationRead = async ({ id, userId }) => {
 export const markAllNotificationsRead = async ({ role, userId }) => {
   await query(`UPDATE notifications SET read_at = NOW() WHERE read_at IS NULL AND (user_id = $1 OR role = $2 OR role IS NULL)`, [userId, role])
   return { message: 'All notifications marked as read' }
+}
+
+export const deleteNotification = async ({ id, userId }) => {
+  const result = await query(`DELETE FROM notifications WHERE id = $1 AND (user_id = $2 OR user_id IS NULL) RETURNING id`, [id, userId])
+  if (result.rowCount === 0) throw new Error('Notification not found or unauthorized')
+  return { message: 'Notification deleted successfully' }
 }

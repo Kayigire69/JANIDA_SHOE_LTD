@@ -24,4 +24,5 @@ export const dashboardApi = {
   getNotifications: () => request<{ notifications: any[] }>("/dashboard/notifications"),
   markNotificationRead: (id: string) => request<{ message: string }>(`/dashboard/notifications/${id}/read`, { method: "PATCH" }),
   markAllNotificationsRead: () => request<{ message: string }>("/dashboard/notifications/read-all", { method: "PATCH" }),
+  deleteNotification: (id: string) => request<{ message: string }>(`/dashboard/notifications/${id}`, { method: "DELETE" }),
 };

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Plus, Search, Loader2, CheckCircle2, Clock, AlertCircle, X, BarChart3, ClipboardCheck } from "lucide-react";
 import { workforceApi } from "../../services/workforceApi";
-import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
 import { useSettings } from "../../context/SettingsContext";
 import { toast } from "sonner";
 
@@ -50,37 +49,6 @@ export function TaskManagement() {
     }
   };
 
-  const handleExportCSV = () => {
-    const rows = [
-      ["Task Management Report"],
-      [""],
-      ["Task ID", "Title", "Employee ID", "Priority", "Status", "Due Date", "Created At"],
-      ...tasks.map(t => [t.id.substring(0,8), t.title, t.employee_id, t.priority, t.status, t.due_date, t.created_at])
-    ];
-    exportToCSV("tasks_report", rows);
-  };
-
-  const handleExportPDF = async () => {
-    await generateStyledPDF({
-      filename: "tasks_report",
-      reportTitle: "Task Management Report",
-      sectionTitle: "1. TASK DETAILS IN PERIOD",
-      periodStart: new Date().toLocaleDateString(),
-      columns: ["Task ID", "Title", "Employee ID", "Priority", "Status", "Due Date"],
-      rows: tasks.map(t => [
-        t.id.substring(0,8),
-        t.title,
-        t.employee_id,
-        t.priority,
-        t.status,
-        new Date(t.due_date).toLocaleDateString()
-      ]),
-      companyName,
-      logoUrl: logoUrl || undefined,
-      apiBaseUrl: API_BASE_URL
-    });
-  };
-
   return (
     <Layout>
       <div className="p-8 space-y-6">
@@ -89,17 +57,9 @@ export function TaskManagement() {
             <h1 className="text-2xl font-semibold text-slate-900">Task Management</h1>
             <p className="text-slate-600 text-sm mt-1">Assign and monitor workforce tasks</p>
           </div>
-          <div className="flex items-center gap-3 print:hidden">
-            <button onClick={handleExportPDF} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900">
-              <ClipboardCheck className="w-4 h-4" /> Export PDF
-            </button>
-            <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
-              <BarChart3 className="w-4 h-4" /> Export Excel
-            </button>
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Plus className="w-4 h-4" /> Create Task
-            </button>
-          </div>
+          <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+            <Plus className="w-4 h-4" /> Create Task
+          </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6">

@@ -134,7 +134,7 @@ export function BackorderLog() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    {["Order #", "Customer", "Product", "SKU", "Qty Backordered", "Date Logged", "Status", "Action"].map((h) => (
+                    {["Order #", "Customer", "Product", "Qty Backordered", "Date Logged", "Status", "Action"].map((h) => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -145,7 +145,6 @@ export function BackorderLog() {
                       <td className="px-4 py-3 font-mono font-semibold text-blue-700">{b.orderNumber}</td>
                       <td className="px-4 py-3 font-medium text-slate-900">{b.customer}</td>
                       <td className="px-4 py-3 text-slate-700">{b.product}</td>
-                      <td className="px-4 py-3 text-slate-500 font-mono text-xs">{b.sku}</td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full">
                           <Package className="w-3 h-3" /> {b.quantityBackordered} pairs

@@ -31,3 +31,11 @@ export const markAllNotificationsRead = async (req, res, next) => {
     next(err)
   }
 }
+
+export const deleteNotification = async (req, res, next) => {
+  try {
+    res.json(await dashboardService.deleteNotification({ id: req.params.id, userId: req.user.id }))
+  } catch (err) {
+    next(err)
+  }
+}

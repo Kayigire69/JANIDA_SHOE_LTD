@@ -31,7 +31,7 @@ export const getSystemOverview = async () => {
 }
 
 // Announcements & Broadcasts
-export const createAnnouncement = async (data) => {
+export const createAnnouncement = async (data, senderRole) => {
   const { title, message, type } = data
   if (!title || !message) {
     throw new AppError('Title and message are required', 400)
@@ -48,14 +48,14 @@ export const createAnnouncement = async (data) => {
 
   // 3. Insert individual notifications so they show up in Notification Center
   if (usersRes.rows.length > 0) {
-    let sql = `INSERT INTO notifications (user_id, title, message, type, priority) VALUES `
+    let sql = `INSERT INTO notifications (user_id, title, message, type, priority, sender_role) VALUES `
     const values = []
     let i = 1
     
     for (const user of usersRes.rows) {
-      sql += `($${i}, $${i+1}, $${i+2}, $${i+3}, 'high'),`
-      values.push(user.id, title, message, type || 'info')
-      i += 4
+      sql += `($${i}, $${i+1}, $${i+2}, $${i+3}, 'high', $${i+4}),`
+      values.push(user.id, title, message, type || 'info', senderRole || 'administrator')
+      i += 5
     }
     
     sql = sql.slice(0, -1)

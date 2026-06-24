@@ -188,10 +188,6 @@ export function EquipmentCatalog() {
             <p className="text-slate-600 text-sm mt-1">Monitor and manage factory equipment</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-all">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
             <button onClick={() => { setShowAdd(true); setError(""); }} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
               <Plus className="w-4 h-4" />
               Add Equipment

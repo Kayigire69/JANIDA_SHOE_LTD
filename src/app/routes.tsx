@@ -15,6 +15,7 @@ import { SalesAdminDashboard } from "./components/dashboards/SalesAdminDashboard
 import { SupervisorDashboard } from "./components/dashboards/SupervisorDashboard";
 import { dashboardPaths } from "./services/authApi";
 import { ProductionPlanning } from "./components/production/ProductionPlanning";
+import { ProductionWorkforce } from "./components/production/ProductionWorkforce";
 import { ProductionSchedule } from "./components/production/ProductionSchedule";
 import { ProductionOrders } from "./components/production/ProductionOrders";
 import { ProductionHistory } from "./components/production/ProductionHistory";
@@ -134,6 +135,10 @@ export const router = createBrowserRouter([
   {
     path: "/production-planning",
     Component: ProductionPlanning,
+  },
+  {
+    path: "/production/workforce",
+    Component: ProductionWorkforce,
   },
   {
     path: "/production-schedule",

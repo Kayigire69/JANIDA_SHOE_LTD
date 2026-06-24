@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Layout } from "../Layout";
 import { Plus, Search, Star, Award, TrendingUp, BarChart3, ClipboardCheck, X } from "lucide-react";
-import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
 import { workforceApi } from "../../services/workforceApi";
 import { useSettings } from "../../context/SettingsContext";
 import { toast } from "sonner";
@@ -15,9 +14,9 @@ export function PerformanceReviews() {
   const [newReview, setNewReview] = useState({
     employeeId: "",
     reviewPeriod: "Q1 2026",
-    productivityScore: 0,
-    qualityScore: 0,
-    attendanceScore: 0,
+    productivityScore: "",
+    qualityScore: "",
+    attendanceScore: "",
     comments: ""
   });
 
@@ -41,55 +40,24 @@ export function PerformanceReviews() {
     try {
       await workforceApi.createReview({
         ...newReview,
-        productivityScore: Number(newReview.productivityScore),
-        qualityScore: Number(newReview.qualityScore),
-        attendanceScore: Number(newReview.attendanceScore)
+        productivityScore: newReview.productivityScore ? Number(newReview.productivityScore) : 0,
+        qualityScore: newReview.qualityScore ? Number(newReview.qualityScore) : 0,
+        attendanceScore: newReview.attendanceScore ? Number(newReview.attendanceScore) : 0
       });
       setShowModal(false);
+      setNewReview({
+        employeeId: "",
+        reviewPeriod: "Q1 2026",
+        productivityScore: "",
+        qualityScore: "",
+        attendanceScore: "",
+        comments: ""
+      });
       fetchData();
       toast.success("Review created successfully");
     } catch (err) {
       toast.error("Failed to create review");
     }
-  };
-
-  const handleExportCSV = () => {
-    const rows = [
-      ["Performance Reviews Report"],
-      [""],
-      ["Employee", "Period", "Productivity", "Quality", "Attendance", "Overall Score", "Date"],
-      ...reviews.map(r => [
-        r.employee_name || r.employee_id, 
-        r.review_period, 
-        `${r.productivity_score}%`, 
-        `${r.quality_score}%`, 
-        `${r.attendance_score}%`, 
-        `${r.overall_score}%`, 
-        new Date(r.created_at).toLocaleDateString()
-      ])
-    ];
-    exportToCSV("performance_reviews", rows);
-  };
-
-  const handleExportPDF = async () => {
-    await generateStyledPDF({
-      filename: "performance-reviews",
-      reportTitle: "Performance Reviews Report",
-      sectionTitle: "1. PERFORMANCE REVIEWS DETAIL IN PERIOD",
-      periodStart: new Date().toLocaleDateString(),
-      columns: ["Worker", "Productivity", "Quality", "Attendance", "Overall", "Date"],
-      rows: reviews.map(r => [
-        r.worker_name,
-        `${r.productivity_score}%`,
-        `${r.quality_score}%`,
-        `${r.attendance_score}%`,
-        `${r.overall_score}%`,
-        new Date(r.created_at).toLocaleDateString()
-      ]),
-      companyName,
-      logoUrl: logoUrl || undefined,
-      apiBaseUrl: API_BASE_URL
-    });
   };
 
   return (
@@ -101,20 +69,6 @@ export function PerformanceReviews() {
             <p className="text-slate-600 text-sm mt-1">Monitor employee performance and conduct reviews</p>
           </div>
           <div className="flex items-center gap-3 print:hidden">
-            <button 
-              onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 transition-colors"
-            >
-              <ClipboardCheck className="w-4 h-4" />
-              Export PDF
-            </button>
-            <button 
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-            >
-              <BarChart3 className="w-4 h-4" />
-              Export Excel
-            </button>
             <button 
               onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -273,15 +227,39 @@ export function PerformanceReviews() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Productivity (%)</label>
-                  <input type="number" min="0" max="100" required value={newReview.productivityScore} onChange={e => setNewReview({...newReview, productivityScore: Number(e.target.value)})} className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="100" 
+                    placeholder="0-100"
+                    value={newReview.productivityScore} 
+                    onChange={e => setNewReview({...newReview, productivityScore: e.target.value})} 
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Quality (%)</label>
-                  <input type="number" min="0" max="100" required value={newReview.qualityScore} onChange={e => setNewReview({...newReview, qualityScore: Number(e.target.value)})} className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="100" 
+                    placeholder="0-100"
+                    value={newReview.qualityScore} 
+                    onChange={e => setNewReview({...newReview, qualityScore: e.target.value})} 
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Attendance (%)</label>
-                  <input type="number" min="0" max="100" required value={newReview.attendanceScore} onChange={e => setNewReview({...newReview, attendanceScore: Number(e.target.value)})} className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                  <input 
+                    type="number" 
+                    min="0" 
+                    max="100" 
+                    placeholder="0-100"
+                    value={newReview.attendanceScore} 
+                    onChange={e => setNewReview({...newReview, attendanceScore: e.target.value})} 
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" 
+                  />
                 </div>
               </div>
 

@@ -309,11 +309,23 @@ export const getSchedule = async () => {
     }
   }
 
-  // Conflict 2: Understaffed shifts
+  // Conflict 2: Understaffed shifts - only check if there are active plans
+  // First, determine which shifts have active production plans
+  const shiftsWithPlans = new Set()
+  for (const p of plans.rows) {
+    if (p.gantt_start !== null && p.gantt_duration !== null) {
+      const shift = p.gantt_start < 8 ? 'Morning' : p.gantt_start < 16 ? 'Afternoon' : 'Night'
+      shiftsWithPlans.add(shift)
+    }
+  }
+
+  // Only flag understaffed shifts if they have active plans
   for (const [key, shift] of Object.entries(shiftsMap)) {
-    if (shift.workers.length < 3) {
+    const shiftName = key.charAt(0).toUpperCase() + key.slice(1)
+    // Only check staffing if this shift has active production plans
+    if (shiftsWithPlans.has(shiftName) && shift.workers.length < 3) {
       conflicts.push({
-        shift: key.charAt(0).toUpperCase() + key.slice(1),
+        shift: shiftName,
         issue: `Insufficient workers assigned (${shift.workers.length}/3 required)`,
         severity: 'medium'
       })

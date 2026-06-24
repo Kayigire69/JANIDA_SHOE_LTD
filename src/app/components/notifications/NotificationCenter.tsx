@@ -1,14 +1,28 @@
 import { useEffect, useState } from "react";
 import { Layout } from "../Layout";
-import { Bell, Check, X, AlertTriangle, Info, CheckCircle2, Clock, Filter } from "lucide-react";
+import { Bell, Check, X, AlertTriangle, Info, CheckCircle2, Clock, Filter, Trash2, User } from "lucide-react";
 import { dashboardApi } from "../../services/dashboardApi";
+import { toast } from "sonner";
 
 export function NotificationCenter() {
   const [filter, setFilter] = useState("all");
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    try {
+      const data = await dashboardApi.getNotifications();
+      setNotifications(data.notifications || []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    dashboardApi.getNotifications().then((data) => setNotifications(data.notifications));
+    loadNotifications();
   }, []);
 
   const getIcon = (type: string) => {
@@ -26,40 +40,55 @@ export function NotificationCenter() {
     }
   };
 
-  const getBackgroundColor = (type: string) => {
+  const getBorderColor = (type: string) => {
     switch (type) {
       case "alert":
-        return "bg-red-50 border-red-200";
+        return "border-l-4 border-l-red-500";
       case "warning":
-        return "bg-amber-50 border-amber-200";
+        return "border-l-4 border-l-amber-500";
       case "success":
-        return "bg-emerald-50 border-emerald-200";
+        return "border-l-4 border-l-emerald-500";
       case "info":
-        return "bg-blue-50 border-blue-200";
+        return "border-l-4 border-l-blue-500";
       default:
-        return "bg-slate-50 border-slate-200";
+        return "border-l-4 border-l-slate-400";
     }
   };
 
   const markAsRead = async (id: string) => {
-    await dashboardApi.markNotificationRead(id);
-    setNotifications(
-      notifications.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-    window.dispatchEvent(new Event('notifications_updated'));
+    try {
+      await dashboardApi.markNotificationRead(id);
+      setNotifications(
+        notifications.map((notif) =>
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+      window.dispatchEvent(new Event('notifications_updated'));
+    } catch (err: any) {
+      toast.error(err.message || "Failed to mark as read");
+    }
   };
 
   const markAllAsRead = async () => {
-    await dashboardApi.markAllNotificationsRead();
-    setNotifications(notifications.map((notif) => ({ ...notif, read: true })));
-    window.dispatchEvent(new Event('notifications_updated'));
+    try {
+      await dashboardApi.markAllNotificationsRead();
+      setNotifications(notifications.map((notif) => ({ ...notif, read: true })));
+      window.dispatchEvent(new Event('notifications_updated'));
+      toast.success("All notifications marked as read");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to mark all as read");
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id));
-    window.dispatchEvent(new Event('notifications_updated'));
+  const deleteNotification = async (id: string) => {
+    try {
+      await dashboardApi.deleteNotification(id);
+      setNotifications(notifications.filter((notif) => notif.id !== id));
+      window.dispatchEvent(new Event('notifications_updated'));
+      toast.success("Notification deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete notification");
+    }
   };
 
   const filteredNotifications = notifications.filter((notif) => {
@@ -72,111 +101,110 @@ export function NotificationCenter() {
 
   return (
     <Layout>
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-              <Bell className="w-7 h-7 text-blue-600" />
-              Notification Center
+              <Bell className="w-6 h-6 text-slate-600" />
+              Notifications
               {unreadCount > 0 && (
-                <span className="px-3 py-1 bg-red-500 text-white text-sm font-medium rounded-full">
-                  {unreadCount} unread
+                <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                  {unreadCount}
                 </span>
               )}
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
-              Stay updated with important system alerts and updates
-            </p>
           </div>
           <button
             onClick={markAllAsRead}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg"
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
-            <Check className="w-4 h-4" />
-            Mark All as Read
+            Mark all as read
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Filter className="w-5 h-5 text-slate-600" />
-            <span className="text-sm font-medium text-slate-700">Filter:</span>
-            <div className="flex gap-2 flex-wrap">
-              {["all", "unread", "alert", "warning", "success", "info"].map((filterType) => (
-                <button
-                  key={filterType}
-                  onClick={() => setFilter(filterType)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    filter === filterType
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Filter Bar */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-4">
+          <span className="text-sm text-slate-600">Filter:</span>
+          {["all", "unread", "alert", "warning", "success", "info"].map((filterType) => (
+            <button
+              key={filterType}
+              onClick={() => setFilter(filterType)}
+              className={`text-sm px-3 py-1.5 rounded-md transition-colors ${
+                filter === filterType
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+            </button>
+          ))}
+        </div>
 
+        {/* Notifications List */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
+          <div className="text-center py-16">
+            <Bell className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">No notifications</p>
+          </div>
+        ) : (
           <div className="space-y-3">
-            {filteredNotifications.length === 0 ? (
-              <div className="text-center py-12">
-                <Bell className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No notifications to display</p>
-              </div>
-            ) : (
-              filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`border rounded-lg p-4 transition-all ${
-                    getBackgroundColor(notification.type)
-                  } ${!notification.read ? "border-l-4" : ""}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 mt-1">{getIcon(notification.type)}</div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-slate-900">
-                              {notification.title}
-                            </h3>
-                            {!notification.read && (
-                              <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                            )}
-                          </div>
-                          <p className="text-sm text-slate-700 mb-2">{notification.message}</p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <Clock className="w-3 h-3" />
+            {filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`bg-white border border-slate-200 rounded-lg p-4 ${getBorderColor(notification.type)} ${!notification.read ? "bg-slate-50" : ""}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {getIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-slate-900">{notification.title}</h3>
+                        <p className="text-sm text-slate-600 mt-1">{notification.message}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
                             {new Date(notification.timestamp).toLocaleString()}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          {!notification.read && (
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                              title="Mark as read"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
+                          {notification.senderRole && (
+                            <div className="flex items-center gap-1">
+                              <User className="w-3.5 h-3.5" />
+                              <span>{notification.senderRole}</span>
+                            </div>
                           )}
-                          <button
-                            onClick={() => deleteNotification(notification.id)}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {!notification.read && (
+                          <button
+                            onClick={() => markAsRead(notification.id)}
+                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                            title="Mark as read"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNotification(notification.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

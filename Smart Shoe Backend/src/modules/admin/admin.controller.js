@@ -11,7 +11,7 @@ export const getSystemOverview = async (req, res, next) => {
 
 export const createAnnouncement = async (req, res, next) => {
   try {
-    const result = await adminService.createAnnouncement(req.body)
+    const result = await adminService.createAnnouncement(req.body, req.user.role)
     res.status(201).json(result)
   } catch (err) {
     next(err)

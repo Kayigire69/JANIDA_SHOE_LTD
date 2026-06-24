@@ -83,13 +83,23 @@ export const salesService = {
       const countRes = await db.query('SELECT COUNT(*) FROM orders');
       const orderNum = `ORD-${String(parseInt(countRes.rows[0].count) + 2000).padStart(4, '0')}`;
 
+      // Handle walkin customer
+      let customerId = data.customerId;
+      if (!customerId && data.walkinCustomer) {
+        const custRes = await db.query(
+          `INSERT INTO customers (name, email, phone) VALUES ($1,$2,$3) RETURNING id`,
+          [data.walkinCustomer.name, data.walkinCustomer.email || null, data.walkinCustomer.phone || null]
+        );
+        customerId = custRes.rows[0].id;
+      }
+
       // Create order
       const orderRes = await db.query(
         `INSERT INTO orders (order_number, customer_id, status, delivery_date, priority, shipping_address, notes, created_by)
          VALUES ($1,$2,'pending',$3,$4,$5,$6,$7) RETURNING id, order_number`,
         [
           orderNum,
-          data.customerId,
+          customerId,
           data.deliveryDate,
           data.priority || 'medium',
           data.shippingAddress,
@@ -102,14 +112,57 @@ export const salesService = {
 
       for (const item of data.items) {
         // Check finished goods stock
-        const fgRes = await db.query(
+        let fgRes = await db.query(
           `SELECT fg.id, fg.stock, fg.unit_cost, sm.name
            FROM finished_goods fg
            JOIN shoe_models sm ON fg.shoe_model_id = sm.id
            WHERE fg.id = $1`,
           [item.finishedGoodId]
         );
-        if (fgRes.rowCount === 0) throw new Error(`Finished good ${item.finishedGoodId} not found`);
+
+        if (fgRes.rowCount === 0) {
+          // Fallback: check if it's a completed batch being sold directly
+          const batchRes = await db.query(
+            `SELECT b.shoe_model_id, b.quantity, sm.name, b.batch_number
+             FROM batches b
+             JOIN shoe_models sm ON b.shoe_model_id = sm.id
+             WHERE b.id = $1 AND b.status = 'completed'`,
+            [item.finishedGoodId]
+          );
+          
+          if (batchRes.rowCount > 0) {
+            const batch = batchRes.rows[0];
+            // Find a finished_goods entry for this shoe model
+            let existingFg = await db.query(
+              `SELECT id, stock, unit_cost FROM finished_goods WHERE shoe_model_id = $1 LIMIT 1`,
+              [batch.shoe_model_id]
+            );
+            if (existingFg.rowCount === 0) {
+              existingFg = await db.query(
+                `INSERT INTO finished_goods (shoe_model_id, sku, stock, unit_cost)
+                 VALUES ($1, $2, $3, 0) RETURNING id, stock, unit_cost`,
+                [batch.shoe_model_id, 'SKU-' + batch.batch_number, batch.quantity]
+              );
+            } else {
+              // Integrate batch stock to finished goods to cover the sale
+              await db.query(`UPDATE finished_goods SET stock = stock + $1 WHERE id = $2`, [batch.quantity, existingFg.rows[0].id]);
+            }
+            // Mark batch location as Integrated so it doesn't appear in the dropdown again
+            await db.query(`UPDATE batches SET location = 'Integrated' WHERE id = $1`, [item.finishedGoodId]);
+            
+            // Re-fetch the newly assigned finished_goods row
+            item.finishedGoodId = existingFg.rows[0].id;
+            fgRes = await db.query(
+              `SELECT fg.id, fg.stock, fg.unit_cost, sm.name
+               FROM finished_goods fg
+               JOIN shoe_models sm ON fg.shoe_model_id = sm.id
+               WHERE fg.id = $1`,
+              [item.finishedGoodId]
+            );
+          } else {
+            throw new Error(`Finished good or completed batch ${item.finishedGoodId} not found`);
+          }
+        }
 
         const fg = fgRes.rows[0];
         const unitPrice = parseFloat(item.unitPrice || fg.unit_cost);

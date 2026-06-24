@@ -9,5 +9,6 @@ router.get('/', dashboardController.dashboard)
 router.get('/notifications', dashboardController.notifications)
 router.patch('/notifications/:id/read', dashboardController.markNotificationRead)
 router.patch('/notifications/read-all', dashboardController.markAllNotificationsRead)
+router.delete('/notifications/:id', dashboardController.deleteNotification)
 
 export default router

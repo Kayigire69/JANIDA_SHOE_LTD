@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('authToken');
@@ -16,20 +16,28 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const salesApi = {
   // Customers
-  getCustomers: () => request<any[]>('/api/sales/customers'),
-  createCustomer: (data: any) => request<any>('/api/sales/customers', { method: 'POST', body: JSON.stringify(data) }),
+  getCustomers: () => request<any[]>('/sales/customers'),
+  createCustomer: (data: any) => request<any>('/sales/customers', { method: 'POST', body: JSON.stringify(data) }),
+  updateCustomer: (id: string, data: any) => request<any>(`/sales/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCustomer: (id: string) => request<any>(`/sales/customers/${id}`, { method: 'DELETE' }),
 
   // Orders
-  getOrders: (status?: string) => request<any[]>(`/api/sales/orders${status && status !== 'all' ? `?status=${status}` : ''}`),
-  createOrder: (data: any) => request<any>('/api/sales/orders', { method: 'POST', body: JSON.stringify(data) }),
+  getOrders: (status?: string) => request<any[]>(`/sales/orders${status && status !== 'all' ? `?status=${status}` : ''}`),
+  getOrderById: (id: string) => request<any>(`/sales/orders/${id}`),
+  createOrder: (data: any) => request<any>('/sales/orders', { method: 'POST', body: JSON.stringify(data) }),
   updateOrderStatus: (id: string, status: string, shipmentData?: { carrier?: string; trackingNumber?: string }) =>
-    request<any>(`/api/sales/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...shipmentData }) }),
+    request<any>(`/sales/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, ...shipmentData }) }),
+  updateOrderPriority: (id: string, priority: string) =>
+    request<any>(`/sales/orders/${id}/priority`, { method: 'PATCH', body: JSON.stringify({ priority }) }),
+
+  // Shipments / Delivery
+  getShipments: () => request<any[]>('/sales/shipments').catch(() => [] as any[]),
 
   // Backorders
-  getBackorders: () => request<any[]>('/api/sales/backorders'),
-  resolveBackorder: (id: string) => request<any>(`/api/sales/backorders/${id}/resolve`, { method: 'PATCH' }),
+  getBackorders: () => request<any[]>('/sales/backorders'),
+  resolveBackorder: (id: string) => request<any>(`/sales/backorders/${id}/resolve`, { method: 'PATCH' }),
 
   // Invoices
-  getInvoices: () => request<any[]>('/api/sales/invoices'),
-  payInvoice: (id: string) => request<any>(`/api/sales/invoices/${id}/pay`, { method: 'PATCH' }),
+  getInvoices: () => request<any[]>('/sales/invoices'),
+  payInvoice: (id: string) => request<any>(`/sales/invoices/${id}/pay`, { method: 'PATCH' }),
 };

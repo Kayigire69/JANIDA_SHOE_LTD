@@ -28,9 +28,12 @@ export function ProductionSchedule() {
         productionApi.getOrders(),
       ]);
       setSchedule(schedRes);
-      setAllWorkers(planningRes.workers);
+      setAllWorkers(planningRes.workers || []);
       setOrders(ordersRes);
+      console.log('Schedule data loaded:', schedRes);
+      console.log('Conflicts:', schedRes.conflicts);
     } catch (err: any) {
+      console.error('Failed to load schedule data:', err);
       toast.error(err.message || "Failed to load schedule data from database");
     } finally {
       setLoading(false);
@@ -44,11 +47,18 @@ export function ProductionSchedule() {
   const handleOptimize = async () => {
     try {
       setOptimizing(true);
-      await productionApi.optimizeSchedule();
+      const result = await productionApi.optimizeSchedule();
       setShowOptimization(true);
       await loadScheduleData();
       setTimeout(() => setShowOptimization(false), 5000);
-      toast.success("Schedule optimized successfully. Conflicts resolved automatically.");
+      
+      // Check if conflicts were resolved
+      const conflictsCount = schedule?.conflicts?.length || 0;
+      if (conflictsCount === 0) {
+        toast.success("Schedule optimized successfully. No conflicts detected.");
+      } else {
+        toast.success(`Schedule optimized. ${conflictsCount} conflict(s) remain and may require manual resolution.`);
+      }
     } catch (err: any) {
       toast.error(err.message || "Optimization failed");
     } finally {
@@ -157,17 +167,17 @@ export function ProductionSchedule() {
               <div className="bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden flex flex-col">
                 <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                    <AlertTriangle className={`w-5 h-5 ${schedule?.conflicts.length ? "text-amber-500" : "text-slate-400"}`} />
+                    <AlertTriangle className={`w-5 h-5 ${schedule?.conflicts && schedule.conflicts.length > 0 ? "text-amber-500" : "text-slate-400"}`} />
                     Schedule Conflicts
                   </h3>
-                  {schedule && schedule.conflicts.length > 0 && (
+                  {schedule && schedule.conflicts && schedule.conflicts.length > 0 && (
                     <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
                       {schedule.conflicts.length} Issues Detected
                     </span>
                   )}
                 </div>
                 <div className="p-0 flex-1 overflow-auto max-h-[300px]">
-                  {schedule?.conflicts.length === 0 ? (
+                  {!schedule?.conflicts || schedule.conflicts.length === 0 ? (
                     <div className="p-8 text-center text-slate-500 flex flex-col items-center justify-center h-full">
                       <CheckCircle2 className="w-10 h-10 text-emerald-400 mb-3" />
                       <p className="font-medium">No schedule conflicts detected.</p>
@@ -184,7 +194,7 @@ export function ProductionSchedule() {
                         </tr>
                       </thead>
                       <tbody>
-                        {schedule?.conflicts.map((conflict, index) => (
+                        {schedule.conflicts.map((conflict, index) => (
                           <tr key={index} className="border-b border-slate-50 hover:bg-slate-50">
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 rounded text-xs font-bold ${

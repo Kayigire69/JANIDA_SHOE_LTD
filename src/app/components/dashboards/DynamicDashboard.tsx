@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Activity, AlertTriangle, BarChart3, Bell, CheckCircle2, ClipboardCheck, Package, PlayCircle, ShoppingCart, TrendingUp, Database, LayoutDashboard, CheckSquare, Calendar, Award } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, PieChart, Pie, Legend } from "recharts";
 import { Layout } from "../Layout";
 import { SystemAnnouncement } from "../common/SystemAnnouncement";
 import { dashboardApi } from "../../services/dashboardApi";
-import { exportToCSV, generateStyledPDF } from "../../utils/exportUtils";
-import { useSettings } from "../../context/SettingsContext";
+import { productionApi } from "../../services/productionApi";
+import { salesApi } from "../../services/salesApi";
 
 const roleTitles: Record<string, string> = {
   production_manager: "Production Manager",
@@ -51,11 +51,12 @@ const quickActions: Record<string, Array<{ label: string; path: string; icon: an
 };
 
 export function DynamicDashboard({ role }: { role: string }) {
-  const { companyName, logoUrl, API_BASE_URL } = useSettings();
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
+  const [liveChart, setLiveChart] = useState<any[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<any[]>([]);
 
   useEffect(() => {
     dashboardApi.getDashboard()
@@ -66,59 +67,61 @@ export function DynamicDashboard({ role }: { role: string }) {
       });
   }, [navigate]);
 
+  // Fetch live chart data based on role
+  useEffect(() => {
+    if (role === "production_manager") {
+      productionApi.getOrders().then(res => {
+        const orders = res.orders || [];
+        // Group by month
+        const monthly: Record<string, { label: string; value: number; completed: number }> = {};
+        orders.forEach((o: any) => {
+          const d = new Date(o.deadline || Date.now());
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+          const label = d.toLocaleString("default", { month: "short", year: "2-digit" });
+          if (!monthly[key]) monthly[key] = { label, value: 0, completed: 0 };
+          monthly[key].value++;
+          if (o.status?.toLowerCase() === "completed") monthly[key].completed++;
+        });
+        setLiveChart(Object.values(monthly).slice(-7));
+        // Status breakdown for pie
+        const statusMap: Record<string, number> = {};
+        orders.forEach((o: any) => { const s = o.status || "Unknown"; statusMap[s] = (statusMap[s] || 0) + 1; });
+        setStatusBreakdown(
+          Object.entries(statusMap).map(([name, value]) => ({ name, value }))
+        );
+      }).catch(() => {});
+    } else if (role === "sales_staff") {
+      salesApi.getOrders().then(orders => {
+        if (!Array.isArray(orders)) return;
+        const monthly: Record<string, { label: string; value: number; revenue: number }> = {};
+        orders.forEach((o: any) => {
+          const d = new Date(o.createdAt || o.created_at || Date.now());
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+          const label = d.toLocaleString("default", { month: "short", year: "2-digit" });
+          if (!monthly[key]) monthly[key] = { label, value: 0, revenue: 0 };
+          monthly[key].value++;
+          monthly[key].revenue += o.totalAmount || o.total_amount || 0;
+        });
+        setLiveChart(Object.values(monthly).slice(-7));
+        const statusMap: Record<string, number> = {};
+        orders.forEach((o: any) => { const s = o.status || "Unknown"; statusMap[s] = (statusMap[s] || 0) + 1; });
+        setStatusBreakdown(
+          Object.entries(statusMap).map(([name, value]) => ({ name, value }))
+        );
+      }).catch(() => {});
+    }
+  }, [role]);
+
   const metrics = data?.metrics || [];
   const announcements = data?.announcements || [];
-  const chart = data?.charts?.trend || [];
+  const dbChart = data?.charts?.trend || [];
+  // Use live chart data if DB chart is empty
+  const chart = dbChart.length > 0 ? dbChart : liveChart;
   const records = data?.records || {};
   const primaryRecords = records.active_batches || records.stock_items || records.inspection_results || records.pending_orders || [];
   const activities = records.recent_activity || [];
 
-  const handleExportCSV = () => {
-    // Generate rows from metrics and primary records
-    const rows = [
-      ["Dashboard Report"],
-      [""],
-      ["Metrics"],
-      ["Title", "Value", "Trend"],
-      ...metrics.map((m: any) => [m.title, m.value, m.trend || m.subtitle]),
-      [""],
-      ["Role Data"],
-    ];
-
-    if (primaryRecords.length > 0) {
-      const headers = Object.keys(primaryRecords[0]);
-      rows.push(headers);
-      primaryRecords.forEach((record: any) => {
-        rows.push(headers.map(h => String(record[h])));
-      });
-    }
-    
-    exportToCSV(`${role}_dashboard_report`, rows);
-  };
-
-  const handleExportPDF = async () => {
-    let cols: string[] = [];
-    let pdfRows: any[][] = [];
-    if (primaryRecords.length > 0) {
-      cols = Object.keys(primaryRecords[0]).map(k => k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
-      pdfRows = primaryRecords.map((record: any) => Object.keys(primaryRecords[0]).map(h => String(record[h])));
-    } else {
-      cols = ["Metrics", "Value", "Trend"];
-      pdfRows = metrics.map((m: any) => [m.title, m.value, m.trend || m.subtitle]);
-    }
-    
-    await generateStyledPDF({
-      filename: `${role}_dashboard_report`,
-      reportTitle: `${roleTitles[role]} Dashboard Report`,
-      sectionTitle: "1. DASHBOARD DETAIL IN PERIOD",
-      periodStart: new Date().toLocaleDateString(),
-      columns: cols,
-      rows: pdfRows,
-      companyName,
-      logoUrl: logoUrl || undefined,
-      apiBaseUrl: API_BASE_URL
-    });
-  };
+  const PIE_COLORS = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
 
   return (
     <Layout>
@@ -168,57 +171,111 @@ export function DynamicDashboard({ role }: { role: string }) {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Trend Chart */}
           <div className="xl:col-span-2 bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-8">
-            <h3 className="text-xl font-extrabold text-slate-900 mb-6">Trend Overview</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              {role === "inventory_manager" || role === "sales_staff" ? (
-                <BarChart data={chart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="label" stroke="#94a3b8" axisLine={false} tickLine={false} />
-                  <YAxis stroke="#94a3b8" axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-                  <Bar dataKey="value" fill="url(#colorValue)" radius={[6, 6, 0, 0]}>
-                    {/* Define gradient for bar chart */}
-                  </Bar>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#2563eb" stopOpacity={0.8} />
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              ) : (
-                <LineChart data={chart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="label" stroke="#94a3b8" axisLine={false} tickLine={false} />
-                  <YAxis stroke="#94a3b8" axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#2563eb' }} />
-                </LineChart>
-              )}
-            </ResponsiveContainer>
+            <div className="flex items-center gap-2 mb-6">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <h3 className="text-xl font-extrabold text-slate-900">
+                {role === "production_manager" ? "Production Batches by Month" :
+                 role === "sales_staff" ? "Sales Orders by Month" :
+                 "Trend Overview"}
+              </h3>
+            </div>
+            {chart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-56 text-slate-400 gap-2">
+                <BarChart3 className="w-10 h-10" />
+                <p className="text-sm">No data yet — create some records to see trends</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                {role === "production_manager" ? (
+                  <BarChart data={chart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity={0.8} />
+                      </linearGradient>
+                      <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="value" name="Total Batches" fill="url(#colorProd)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="completed" name="Completed" fill="url(#colorComp)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                ) : role === "sales_staff" ? (
+                  <BarChart data={chart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="value" name="Orders" fill="url(#colorSales)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                ) : (
+                  <LineChart data={chart} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }} />
+                    <Line type="monotone" dataKey="value" name="Value" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6, strokeWidth: 0, fill: '#2563eb' }} />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            )}
           </div>
 
-          <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-8">
-            <h3 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">
-              <Bell className="w-5 h-5 text-amber-500" />
-              Recent Activity
-            </h3>
-            <div className="space-y-4">
-              {activities.map((activity: any, index: number) => (
-                <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-slate-100 transition-colors">
-                  <p className="text-sm font-medium text-slate-800">{activity.action || activity.message}</p>
-                  <p className="text-xs text-slate-500 mt-1.5 font-semibold">{activity.time || activity.createdAt}</p>
-                </div>
-              ))}
-              {activities.length === 0 && (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Activity className="w-5 h-5 text-slate-400" />
+          {/* Status Breakdown + Recent Activity */}
+          <div className="space-y-6">
+            {/* Status Pie (when we have live breakdown data) */}
+            {statusBreakdown.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6">
+                <h3 className="text-base font-bold text-slate-900 mb-4">Status Breakdown</h3>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={statusBreakdown} cx="50%" cy="45%" innerRadius={40} outerRadius={68} paddingAngle={3} dataKey="value">
+                      {statusBreakdown.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 11 }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/80 p-6 flex-1">
+              <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-amber-500" />
+                Recent Activity
+              </h3>
+              <div className="space-y-3">
+                {activities.map((activity: any, index: number) => (
+                  <div key={index} className="p-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors">
+                    <p className="text-sm font-medium text-slate-800">{activity.action || activity.message}</p>
+                    <p className="text-xs text-slate-500 mt-1 font-semibold">{activity.time || activity.createdAt}</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-500">No recent activity yet.</p>
-                </div>
-              )}
+                ))}
+                {activities.length === 0 && (
+                  <div className="text-center py-6">
+                    <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Activity className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <p className="text-xs font-medium text-slate-500">No recent activity yet.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   message TEXT NOT NULL,
   priority VARCHAR(40) NOT NULL DEFAULT 'normal',
   read_at TIMESTAMPTZ,
+  sender_role VARCHAR(40),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -707,6 +708,17 @@ ALTER TABLE users ALTER COLUMN department DROP NOT NULL;
 
 -- Sequence for auto-generating employee IDs
 CREATE SEQUENCE IF NOT EXISTS employee_id_seq START WITH 1000;
+
+-- Add sender_role column to notifications table if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'notifications' AND column_name = 'sender_role'
+  ) THEN
+    ALTER TABLE notifications ADD COLUMN sender_role VARCHAR(40);
+  END IF;
+END $$;
 `
 
 await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto')

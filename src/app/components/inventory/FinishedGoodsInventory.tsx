@@ -28,7 +28,6 @@ export function FinishedGoodsInventory() {
 
   const filteredGoods = finishedGoods.filter((item) => {
     const matchesSearch = item.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "all" || item.status === filterStatus;
     return matchesSearch && matchesStatus;
@@ -53,9 +52,9 @@ export function FinishedGoodsInventory() {
 
   const handleExport = () => {
     // Generate CSV
-    const headers = ["Product ID,Product Name,SKU,Stock,Target,Minimum,Warehouse Location,Unit Cost,Total Value,Last Produced,Status"];
+    const headers = ["Product ID,Product Name,Stock,Target,Minimum,Warehouse Location,Unit Cost,Total Value,Last Produced,Status"];
     const rows = filteredGoods.map(item => 
-      `"${item.id}","${item.product}","${item.sku}",${item.stock},${item.target},${item.minimum},"${item.warehouseLocation}",${item.unitCost},${(item.stock * item.unitCost).toFixed(2)},"${item.lastProduced || ''}","${item.status}"`
+      `"${item.id}","${item.product}",${item.stock},${item.target},${item.minimum},"${item.warehouseLocation}",${item.unitCost},${(item.stock * item.unitCost).toFixed(2)},"${item.lastProduced || ''}","${item.status}"`
     );
     const csvContent = headers.concat(rows).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -108,7 +107,7 @@ export function FinishedGoodsInventory() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-600 text-sm font-medium">Total Value</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${(totalValue / 1000).toFixed(1)}k</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2">RWF {(totalValue / 1000).toFixed(1)}k</p>
                 <p className="text-emerald-600 text-sm mt-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   inventory value
@@ -141,7 +140,7 @@ export function FinishedGoodsInventory() {
               <div>
                 <p className="text-slate-600 text-sm font-medium">Product Lines</p>
                 <p className="text-3xl font-bold text-slate-900 mt-2">{finishedGoods.length}</p>
-                <p className="text-slate-500 text-sm mt-1">active SKUs</p>
+                <p className="text-slate-500 text-sm mt-1">active products</p>
               </div>
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                 <Package className="w-6 h-6 text-slate-600" />
@@ -156,7 +155,7 @@ export function FinishedGoodsInventory() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by product name, SKU, or ID..."
+              placeholder="Search by product name or ID..."
               className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <select
@@ -183,7 +182,6 @@ export function FinishedGoodsInventory() {
                   <tr>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-white">Product ID</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-white">Product Name</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-white">SKU</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-white">Stock</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-white">Target</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-white">Minimum</th>
@@ -199,14 +197,13 @@ export function FinishedGoodsInventory() {
                     <tr key={item.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-4 px-6 text-sm font-medium text-slate-900 font-mono">{item.id}</td>
                       <td className="py-4 px-6 text-sm text-slate-900 font-medium">{item.product}</td>
-                      <td className="py-4 px-6 text-sm text-slate-600 font-mono">{item.sku}</td>
                       <td className="py-4 px-6 text-sm font-semibold text-slate-900">{item.stock}</td>
                       <td className="py-4 px-6 text-sm text-slate-600">{item.target}</td>
                       <td className="py-4 px-6 text-sm text-slate-600">{item.minimum}</td>
                       <td className="py-4 px-6 text-sm text-slate-600 font-mono">{item.warehouseLocation}</td>
-                      <td className="py-4 px-6 text-sm text-slate-700">${item.unitCost.toFixed(2)}</td>
+                      <td className="py-4 px-6 text-sm text-slate-700">RWF {item.unitCost.toFixed(2)}</td>
                       <td className="py-4 px-6 text-sm font-semibold text-slate-900">
-                        ${(item.stock * item.unitCost).toLocaleString()}
+                        RWF {(item.stock * item.unitCost).toLocaleString()}
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-600">{item.lastProduced || "-"}</td>
                       <td className="py-4 px-6">

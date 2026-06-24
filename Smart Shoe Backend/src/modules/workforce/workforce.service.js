@@ -207,7 +207,9 @@ export const getAttendance = async ({ employeeId, startDate, endDate }) => {
 
 // ---- Performance ----
 export const createPerformanceReview = async (data, reviewedBy) => {
-  const { employeeId, reviewPeriod, productivityScore, qualityScore, attendanceScore, overallScore, notes } = data
+  const { employeeId, reviewPeriod, productivityScore, qualityScore, attendanceScore, notes } = data
+  // Calculate overall score as average of the three scores
+  const overallScore = (productivityScore + qualityScore + attendanceScore) / 3
   const result = await query(
     `INSERT INTO workforce_performance_reviews (employee_id, review_period, productivity_score, quality_score, attendance_score, overall_score, notes, reviewed_by)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,

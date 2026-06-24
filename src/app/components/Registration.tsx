@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, CheckCircle2, XCircle, Footprints, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, CheckCircle2, XCircle, Footprints, ArrowRight, User, Mail, Lock, Phone, Shield, BarChart3, Package, UserPlus } from "lucide-react";
 import { authApi } from "../services/authApi";
 
 export function Registration() {
@@ -14,6 +14,7 @@ export function Registration() {
     password: "",
     confirmPassword: "",
   });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -60,6 +61,9 @@ export function Registration() {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
+    if (!agreedToTerms) {
+      newErrors.terms = "You must agree to the Terms & Conditions";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -98,216 +102,247 @@ export function Registration() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/40 flex items-center justify-center p-6 py-12">
-      <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-6 duration-700">
-        <Link to="/" className="flex items-center gap-2 mb-6 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
-            <Footprints className="w-5 h-5 text-amber-400" />
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative">
+      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-xl flex overflow-hidden z-10 mb-12">
+        {/* Left Panel */}
+        <div className="hidden lg:flex w-5/12 bg-slate-900 relative flex-col text-white p-10">
+          <div className="absolute inset-0">
+            <img src="/shoe_factory_blue_tint.png" alt="Factory" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-slate-900/60 mix-blend-multiply" />
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/60 via-slate-900/30 to-slate-900/90" />
           </div>
-          <span className="text-xl font-semibold tracking-tight text-slate-900">
-            JANIDA <span className="text-amber-500">SHOE</span>
-          </span>
-        </Link>
+          <div className="relative z-10 flex flex-col h-full">
+            {/* Logo */}
+            <Link to="/" className="flex flex-col items-start gap-2 mb-10">
+              <Footprints className="w-12 h-12 text-white" />
+              <div className="flex flex-col mt-2">
+                <span className="text-2xl font-bold tracking-wider uppercase">JIANIDA</span>
+                <span className="text-[10px] font-semibold tracking-[0.2em] text-slate-300 uppercase">SHOE LTD</span>
+              </div>
+            </Link>
+            
+            <h2 className="text-[1.7rem] font-bold uppercase tracking-wide leading-[1.3] mb-12 text-slate-100">
+              Smart Shoe<br/>Factory<br/>Management<br/>System
+            </h2>
+            
+            <div className="w-8 h-1 bg-blue-500 rounded-full mb-10"></div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 px-8 py-6">
-            <h1 className="text-2xl font-bold text-white">Create Account</h1>
-            <p className="text-slate-300 text-sm mt-1">
-              Join the Janida Shoe Ltd management platform
-            </p>
+            {/* Features List */}
+            <div className="space-y-8 mt-auto pb-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full border border-blue-400/20 bg-blue-900/30 backdrop-blur-sm">
+                  <BarChart3 className="w-5 h-5 text-blue-100" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-slate-100">Real-time Production</h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Monitor and improve<br/>production efficiency</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full border border-blue-400/20 bg-blue-900/30 backdrop-blur-sm">
+                  <Shield className="w-5 h-5 text-blue-100" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-slate-100">Quality Control</h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Ensure product quality<br/>at every step</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full border border-blue-400/20 bg-blue-900/30 backdrop-blur-sm">
+                  <Package className="w-5 h-5 text-blue-100" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-slate-100">Inventory Management</h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Keep inventory organized<br/>and up to date</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full border border-blue-400/20 bg-blue-900/30 backdrop-blur-sm">
+                  <UserPlus className="w-5 h-5 text-blue-100" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-slate-100">User Management</h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">Manage roles and<br/>permissions easily</p>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                />
-                {errors.fullName && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.fullName}
-                  </p>
-                )}
+        {/* Right Panel */}
+        <div className="w-full lg:w-7/12 p-8 sm:p-12 bg-white flex flex-col justify-center">
+          <div className="w-full max-w-md mx-auto">
+            
+            <div className="flex flex-col items-center text-center space-y-3 mb-8">
+              <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-1 text-blue-600">
+                <UserPlus className="w-6 h-6" />
               </div>
+              <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
+              <p className="text-sm text-slate-500 max-w-sm">
+                Register to access the Smart Shoe Factory<br/>Management System
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="jack@gmail.com"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+250780784244"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
-                />
-                {errors.phone && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.phone}
-                  </p>
-                )}
-              </div>
-
-              <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
-                <span className="text-amber-500 mt-0.5">ℹ️</span>
-                <p className="text-sm text-amber-800">
-                  Your <strong>department</strong> and <strong>role</strong> will be assigned by the system administrator after your account is verified.
-                </p>
-              </div>
-
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Password <span className="text-red-500">*</span>
-                </label>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Full Name</label>
                 <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <User className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder="Enter your full name"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder:text-slate-400"
+                  />
+                </div>
+                {errors.fullName && <p className="text-red-500 text-[10px] mt-1">{errors.fullName}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Phone Number</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Phone className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Enter your phone number"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder:text-slate-400"
+                  />
+                </div>
+                {errors.phone && <p className="text-red-500 text-[10px] mt-1">{errors.phone}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Enter your email address"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder:text-slate-400"
+                  />
+                </div>
+                {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-slate-400" />
+                  </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handlePasswordChange}
-                    placeholder="Create a strong password"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all pr-12"
+                    placeholder="Create a password"
+                    className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder:text-slate-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {formData.password && (
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-600">Password Strength:</span>
-                      <span className={`font-medium ${
-                        passwordStrength <= 1 ? "text-red-600" :
-                        passwordStrength <= 2 ? "text-amber-600" :
-                        passwordStrength <= 3 ? "text-yellow-600" : "text-emerald-600"
-                      }`}>
-                        {getStrengthLabel()}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="mt-2">
+                    <div className="h-1 bg-slate-100 rounded-full overflow-hidden max-w-[150px]">
                       <div
                         className={`h-full transition-all duration-300 ${getStrengthColor()}`}
                         style={{ width: `${(passwordStrength / 4) * 100}%` }}
                       />
                     </div>
-                    <ul className="space-y-1 pt-1">
-                      {passwordRules.map((rule) => {
-                        const passed = rule.test(formData.password);
-                        return (
-                          <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${
-                            passed ? "text-emerald-600" : "text-slate-400"
-                          }`}>
-                            {passed
-                              ? <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-                              : <XCircle className="w-3 h-3 flex-shrink-0" />
-                            }
-                            {rule.label}
-                          </li>
-                        );
-                      })}
-                    </ul>
                   </div>
                 )}
-                {errors.password && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.password}
-                  </p>
-                )}
+                {errors.password && <p className="text-red-500 text-[10px] mt-1">{errors.password}</p>}
               </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Confirm Password <span className="text-red-500">*</span>
-                </label>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700">Confirm Password</label>
                 <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-slate-400" />
+                  </div>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="Re-enter your password"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all pr-12"
+                    placeholder="Confirm your password"
+                    className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder:text-slate-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                  <p className="text-emerald-600 text-xs mt-1 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Passwords match
-                  </p>
-                )}
-                {errors.confirmPassword && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <XCircle className="w-3 h-3" />
-                    {errors.confirmPassword}
-                  </p>
-                )}
+                {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1">{errors.confirmPassword}</p>}
               </div>
-            </div>
 
-            {errors.form && (
-              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-700 text-sm flex items-center gap-2">
-                <XCircle className="w-4 h-4 flex-shrink-0" />
-                {errors.form}
+              <div className="flex items-start pt-2">
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <div className="relative flex items-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="peer w-4 h-4 appearance-none rounded border-2 border-slate-200 checked:bg-blue-600 checked:border-blue-600 focus:ring-2 focus:ring-blue-600/20 focus:outline-none transition-all cursor-pointer"
+                    />
+                    <CheckCircle2 className="absolute inset-0 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none stroke-[3px] p-[2px]" />
+                  </div>
+                  <span className="text-xs text-slate-700 leading-tight">
+                    I agree to the <a href="#" className="text-blue-600 font-medium hover:underline">Terms & Conditions</a> and <a href="#" className="text-blue-600 font-medium hover:underline">Privacy Policy</a>
+                  </span>
+                </label>
               </div>
-            )}
+              {errors.terms && <p className="text-red-500 text-[10px]">{errors.terms}</p>}
 
-            <button
-              type="submit"
-              className="group w-full inline-flex items-center justify-center gap-2 bg-slate-900 text-white py-3.5 rounded-xl font-semibold hover:bg-slate-800 transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-xl hover:shadow-amber-500/20 transform hover:-translate-y-0.5"
-            >
-              Register Account
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
+              {errors.form && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-700 text-xs flex items-center gap-2">
+                  <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {errors.form}
+                </div>
+              )}
 
-            <div className="text-center">
-              <p className="text-slate-600 text-sm">
-                Already have an account?{" "}
-                <Link to="/login" className="text-amber-600 hover:text-amber-700 font-medium transition-colors">
-                  Sign In
-                </Link>
-              </p>
-            </div>
-          </form>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mt-2"
+              >
+                Register
+              </button>
+
+              <div className="text-center pt-2">
+                <p className="text-xs text-slate-600">
+                  Already have an account?{" "}
+                  <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                    Login here
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
+
+      {/* Footer text underneath the card */}
+      <div className="text-center space-y-1">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">SMART SHOE FACTORY MANAGEMENT SYSTEM</p>
+        <p className="text-sm font-bold text-blue-800 uppercase tracking-widest">JIANIDA SHOE LTD</p>
       </div>
     </div>
   );

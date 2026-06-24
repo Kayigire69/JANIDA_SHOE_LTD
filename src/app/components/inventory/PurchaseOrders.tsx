@@ -177,7 +177,7 @@ export function PurchaseOrders() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-600 text-sm font-medium">Total Spend</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">${(totalValue / 1000).toFixed(1)}k</p>
+                <p className="text-3xl font-bold text-slate-900 mt-2">RWF {(totalValue / 1000).toFixed(1)}k</p>
                 <p className="text-slate-500 text-sm mt-1">all-time value</p>
               </div>
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
@@ -220,9 +220,9 @@ export function PurchaseOrders() {
                       <td className="py-4 px-6 text-sm text-slate-900">
                         {po.quantity} {po.unit}
                       </td>
-                      <td className="py-4 px-6 text-sm text-slate-700">${po.unitPrice.toFixed(2)}</td>
+                      <td className="py-4 px-6 text-sm text-slate-700">RWF {po.unitPrice.toFixed(2)}</td>
                       <td className="py-4 px-6 text-sm font-semibold text-slate-900">
-                        ${po.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        RWF {po.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-4 px-6 text-sm text-slate-600">{po.orderDate}</td>
                       <td className="py-4 px-6 text-sm text-slate-600">{po.deliveryDate || "-"}</td>
